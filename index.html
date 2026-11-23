@@ -65,18 +65,28 @@
   svg text { fill: var(--hint); font-size: 9px; }
   .spin { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .text { white-space: pre-wrap; line-height: 1.5; }
+  .list button { display: block; width: 100%; text-align: left; padding: 12px; margin-top: 8px; }
+  #lampState { margin: -6px 0 12px; font-size: 13px; }
 </style>
 </head>
 <body>
 
 <div id="fin" style="display:none">
-  <div class="title" style="padding:0 4px"><button id="back" style="padding:6px 10px">←</button> 💰 Фінанси <small id="fUpd">завантажую…</small></div>
+  <div class="title" style="padding:0 4px"><button class="back" style="padding:6px 10px">←</button> 💰 Фінанси <small id="fUpd">завантажую…</small></div>
   <div id="fBody"></div>
 </div>
 
+<div id="view" style="display:none">
+  <div class="title" style="padding:0 4px"><button class="back" style="padding:6px 10px">←</button> <span id="vTitle"></span></div>
+  <div class="card"><div id="vText" class="text"></div></div>
+  <div class="card list" id="vActions" style="display:none"></div>
+</div>
+
 <div id="home">
-<div class="card">
+<div class="card" id="lampCard">
   <div class="title">💡 Лампа <small id="bv">60%</small></div>
+  <div class="muted" id="lampState">…</div>
   <div class="grid">
     <button data-cmd="💡 Увімкнути">Увімкнути</button>
     <button data-cmd="🌑 Вимкнути">Вимкнути</button>
@@ -103,9 +113,9 @@
   <div class="grid">
     <button class="tile" data-cmd="🔋 Еко"><b>🔋</b>Еко</button>
     <button class="tile" data-cmd="⚡ Звичайний"><b>⚡</b>Звичайний</button>
-    <button class="tile" data-cmd="📊 Статус"><b>📊</b>Статус</button>
-    <button class="tile" data-cmd="🔌 Станція"><b>🔌</b>Станція</button>
-    <button class="tile" data-cmd="графік"><b>🗓</b>Графік</button>
+    <button class="tile" data-view="📊 Статус"><b>📊</b>Статус</button>
+    <button class="tile" data-view="🔌 Станція"><b>🔌</b>Станція</button>
+    <button class="tile" data-view="графік"><b>🗓</b>Графік</button>
     <button class="tile" id="openFin"><b>💰</b>Фінанси</button>
   </div>
 </div>
@@ -125,6 +135,10 @@
     <div class="chips"><button id="tomorrow">завтра</button></div>
   </div>
   <div class="line" style="margin-top:12px"><button class="main" id="remind">Нагадати</button></div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
+    <button data-view="📋 Список">📋 Мої нагадування</button>
+    <button data-view="💊 Таблетки">💊 Таблетки</button>
+  </div>
 </div>
 
 </div>
@@ -142,19 +156,51 @@
     $("toast").textContent = text;
     $("toast").classList.add("show");
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => $("toast").classList.remove("show"), 1400);
+    toast.t = setTimeout(() => $("toast").classList.remove("show"), 2200);
   }
 
-  async function send(cmd) {
+  // bot answers to the panel through ntfy; next answer goes to the current handler
+  let handler = null;
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  async function send(cmd, onAnswer) {
     tg.HapticFeedback?.impactOccurred("light");
     if (!topic) return tg.sendData(cmd);  // old link: fall back to closing mode
+    handler = onAnswer || (d => toast(d.text.split("\n")[0]));
     try {
       await fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd });
-      toast("✓ Готово");
     } catch (e) {
       toast("Немає зв'язку");
     }
   }
+
+  const lampAnswer = d => $("lampState").textContent = d.text.replace(/^💡 /, "").split("\n").slice(0, 3).join(" · ");
+
+  // generic screen: shows the bot answer and its buttons
+  let viewCmd = null;
+  function showView(d) {
+    $("vText").textContent = d.text;
+    const rows = d.buttons.flat();
+    $("vActions").style.display = rows.length ? "block" : "none";
+    $("vActions").innerHTML = rows.map(b => `<button data-cb="${esc(b.callback_data)}">${esc(b.text)}</button>`).join("");
+    $("vActions").querySelectorAll("[data-cb]").forEach(b => b.onclick = () => {
+      const go = () => { $("vText").innerHTML = '<span class="spin">⟳</span>'; send(b.dataset.cb, showView); };
+      if (!/^(del|clear)/.test(b.dataset.cb)) return go();
+      const ask = "Видалити?\n" + b.textContent.replace(/^❌ /, "");
+      tg.isVersionAtLeast("6.2") ? tg.showConfirm(ask, ok => ok && go()) : confirm(ask) && go();
+    });
+  }
+  function openView(cmd, title) {
+    viewCmd = cmd;
+    $("home").style.display = "none";
+    $("view").style.display = "block";
+    $("vTitle").textContent = title;
+    $("vText").innerHTML = '<span class="spin">⟳</span> завантажую…';
+    $("vActions").style.display = "none";
+    tg.BackButton.show();
+    send(cmd, showView);
+  }
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => openView(b.dataset.view, b.textContent.trim()));
 
   // lamp
   const bright = $("bright");
@@ -162,7 +208,7 @@
   function pick(btn, value) {
     document.querySelectorAll(".dot").forEach(d => d.classList.toggle("on", d === btn));
     color = value;
-    send(value + " " + bright.value + "%");
+    send(value + " " + bright.value + "%", lampAnswer);
   }
   document.querySelectorAll("[data-color]").forEach(b => b.onclick = () => pick(b, b.dataset.color));
   $("color").onchange = e => {
@@ -170,9 +216,10 @@
     pick($("pickerDot"), e.target.value.toUpperCase());
   };
   bright.oninput = () => $("bv").textContent = bright.value + "%";
-  bright.onchange = () => send((color ? color + " " : "") + bright.value + "%");
+  bright.onchange = () => send((color ? color + " " : "") + bright.value + "%", lampAnswer);
 
-  document.querySelectorAll("[data-cmd]").forEach(b => b.onclick = () => send(b.dataset.cmd));
+  document.querySelectorAll("#lampCard [data-cmd]").forEach(b => b.onclick = () => send(b.dataset.cmd, lampAnswer));
+  document.querySelectorAll(".tile[data-cmd]").forEach(b => b.onclick = () => send(b.dataset.cmd));
 
   // reminders
   let when = "30 хв", tomorrow = false;
@@ -219,11 +266,7 @@
     return JSON.parse(await new Response(stream).text());
   }
 
-  async function latest(since) {
-    const r = await fetch(`https://ntfy.sh/${topic}d/json?poll=1&since=${since}`);
-    const lines = (await r.text()).trim().split("\n").filter(Boolean).map(JSON.parse).filter(e => e.event === "message");
-    return lines.length ? lines[lines.length - 1] : null;
-  }
+
 
   function chart(days, budget) {
     const w = 320, h = 120, max = Math.max(budget * 1.2, ...days.map(d => d[1])), bw = w / days.length;
@@ -283,40 +326,45 @@
       <div class="card"><div style="margin-bottom:4px">Останні операції</div>${tx}</div>`;
   }
 
-  let finTimer = null;
+  let finOpen = false;
   async function openFin() {
+    finOpen = true;
     $("home").style.display = "none";
     $("fin").style.display = "block";
     tg.BackButton.show();
     try {
-      const cached = await latest("12h");
-      if (cached) render(await unseal(cached.message));
+      const r = await fetch(`https://ntfy.sh/${topic}d/json?poll=1&since=12h`);
+      const fin = (await r.text()).trim().split("\n").filter(Boolean).map(JSON.parse).filter(e => e.title === "fin").pop();
+      if (fin) render(await unseal(fin.message));
     } catch (e) {}
-    const since = Math.floor(Date.now() / 1000) - 2;
-    await fetch("https://ntfy.sh/" + topic, { method: "POST", body: "fin-panel" });
-    let lastId = null, tries = 0;
-    clearInterval(finTimer);
-    finTimer = setInterval(async () => {
-      if (++tries > 150) return clearInterval(finTimer);
-      try {
-        const m = await latest(since);
-        if (!m || m.id === lastId) return;
-        lastId = m.id;
-        const d = await unseal(m.message);
-        render(d);
-        if (!d.syncing) clearInterval(finTimer);
-      } catch (e) {}
-    }, 2000);
+    fetch("https://ntfy.sh/" + topic, { method: "POST", body: "fin-panel" });
   }
   function closeFin() {
-    clearInterval(finTimer);
+    finOpen = false;
+    viewCmd = null;
     $("fin").style.display = "none";
+    $("view").style.display = "none";
     $("home").style.display = "block";
     tg.BackButton.hide();
   }
   $("openFin").onclick = () => { if (!key) return toast("Відкрий панель з кнопки бота"); openFin(); };
   tg.BackButton.onClick(closeFin);
-  $("back").onclick = closeFin;
+  document.querySelectorAll(".back").forEach(b => b.onclick = closeFin);
+
+  if (topic && key) {
+    const es = new EventSource(`https://ntfy.sh/${topic}d/sse`);
+    es.onmessage = async e => {
+      const m = JSON.parse(e.data);
+      if (m.event !== "message") return;
+      const d = await unseal(m.message).catch(() => null);
+      if (!d) return;
+      if (m.title === "fin") { if (finOpen) render(d); return; }
+      const h = handler;
+      handler = null;
+      (h || (x => toast(x.text.split("\n")[0])))(d);
+    };
+    setTimeout(() => send("lamp?", lampAnswer), 500);
+  }
 </script>
 </body>
 </html>
