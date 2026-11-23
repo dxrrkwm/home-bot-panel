@@ -237,6 +237,16 @@
     return s + `<text x="${w - 2}" y="${y(budget) - 3}" text-anchor="end">${budget}</text></svg>`;
   }
 
+  function tips(list) {
+    if (!list.length) return "";
+    const save = list.reduce((n, t) => n + t.save, 0);
+    const items = list.map(t => `<div class="tx" style="display:block"><div class="line"><b>${t.t}</b><span class="muted" style="margin-left:auto">${money(t.v)} грн</span></div>
+      <div class="muted" style="white-space:normal;margin-top:4px">${t.d}</div>
+      ${t.save ? `<div class="plus" style="margin-top:4px;font-size:13px">≈ −${money(t.save)} грн/міс</div>` : ""}</div>`).join("");
+    return `<div class="card"><div class="line"><span>💡 Зайве і як краще</span><span class="muted" style="margin-left:auto">30 днів</span></div>
+      ${save ? `<div style="margin:8px 0;padding:10px;border-radius:12px;background:var(--btn)">Можна зберегти <b class="plus">≈ ${money(save)} грн/міс</b> — це ${money(save * 12)} на рік</div>` : ""}${items}</div>`;
+  }
+
   function render(d) {
     $("fUpd").innerHTML = (d.syncing ? '<span class="spin">⟳</span> оновлюю · ' : "") + "оновлено " + d.upd;
     const today = d.days[d.days.length - 1][1], left = d.budget - today;
@@ -260,6 +270,7 @@
       <div class="card"><div class="line"><span>Цей місяць</span></div>
         <div class="two" style="margin-top:6px"><div><div class="muted">витрати</div><div class="big">${money(d.mspent)}</div></div>
         <div><div class="muted">надходження</div><div class="big plus">${money(d.mincome)}</div></div></div>${cats}</div>
+      ${tips(d.tips || [])}
       ${jars ? `<div class="card"><div>Банки</div>${jars}</div>` : ""}
       <div class="card"><div style="margin-bottom:4px">Останні операції</div>${tx}</div>`;
   }
