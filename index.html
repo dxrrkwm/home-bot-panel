@@ -1,1 +1,177 @@
-<!doctype html> <html lang="uk"> <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"> <title>Панель</title> <script src="https://telegram.org/js/telegram-web-app.js"></script> <style> :root { --bg: var(--tg-theme-bg-color, #f4f8fc); --card: var(--tg-theme-secondary-bg-color, #ffffff); --text: var(--tg-theme-text-color, #1d2733); --hint: var(--tg-theme-hint-color, #8a96a3); --accent: #8ec5ec; --pink: #f6c1d1; } * { box-sizing: border-box; } body { margin: 0; padding: 12px; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, "Segoe UI", Roboto, sans-serif; } h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--hint); margin: 18px 4px 8px; } .card { background: var(--card); border-radius: 14px; padding: 12px; } .row { display: flex; gap: 8px; flex-wrap: wrap; } .row + .row { margin-top: 8px; } button { flex: 1; min-width: 70px; border: 0; border-radius: 10px; padding: 11px 6px; font-size: 15px; background: var(--bg); color: var(--text); cursor: pointer; } button.main { background: var(--accent); color: #10324a; font-weight: 600; } button.pink { background: var(--pink); color: #4a1d2b; font-weight: 600; } input[type=color] { width: 56px; height: 44px; border: 0; padding: 0; background: none; } input[type=range] { flex: 1; accent-color: var(--accent); } input[type=text], input[type=time] { flex: 1; min-width: 0; padding: 10px; border-radius: 10px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 15px; } label { display: flex; align-items: center; gap: 6px; color: var(--hint); } .swatches button { min-width: 0; height: 36px; padding: 0; } #preview { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 0 18px var(--glow, #ff8c69); } </style> </head> <body> <h2>💡 Лампа</h2> <div class="card"> <div class="row"> <button data-cmd="💡 Увімкнути">Увімк</button> <button data-cmd="🌑 Вимкнути">Вимк</button> <button data-cmd="🌙 Нічник">Нічник</button> </div> <div class="row"> <button data-cmd="🕯 Тепле">Тепле</button> <button data-cmd="🌤 Денне">Денне</button> <button data-cmd="❄️ Холодне">Холодне</button> </div> <div class="row swatches"> <button style="background:#f6c1d1" data-color="#f6c1d1"></button> <button style="background:#8ec5ec" data-color="#8ec5ec"></button> <button style="background:#ff8c69" data-color="#ff8c69"></button> <button style="background:#b39ddb" data-color="#b39ddb"></button> <button style="background:#a5d6a7" data-color="#a5d6a7"></button> </div> <div class="row" style="align-items:center"> <input type="color" id="color" value="#ff8c69"> <div id="preview"></div> <label style="flex:1">🔆 <input type="range" id="bright" min="1" max="100" value="60"> <span id="bv">60%</span></label> </div> <div class="row"><button class="pink" id="apply">Застосувати колір</button></div> </div> <h2>💻 Ноут</h2> <div class="card"> <div class="row"> <button data-cmd="🔋 Еко">🔋 Еко</button> <button data-cmd="⚡ Звичайний">⚡ Звичайний</button> <button data-cmd="📊 Статус">📊 Статус</button> </div> <div class="row"> <button data-cmd="🔌 Станція">🔌 Станція</button> <button data-cmd="графік">🗓 Графік</button> <button data-cmd="🔄 Оновити виписку">💰 Виписка</button> </div> </div> <h2>⏰ Нагадування</h2> <div class="card"> <div class="row"><input type="text" id="what" placeholder="Що нагадати"></div> <div class="row" style="align-items:center"> <input type="time" id="at" value="10:00"> <label><input type="checkbox" id="tomorrow"> завтра</label> </div> <div class="row"><button class="main" id="remind">Нагадати</button></div> </div> <script> const tg = window.Telegram.WebApp; tg.ready(); tg.expand(); function send(cmd) { tg.HapticFeedback && tg.HapticFeedback.impactOccurred("light"); tg.sendData(cmd); } const color = document.getElementById("color"); const bright = document.getElementById("bright"); const preview = document.getElementById("preview"); function paint() { preview.style.background = color.value; preview.style.setProperty("--glow", color.value); document.getElementById("bv").textContent = bright.value + "%"; } color.oninput = bright.oninput = paint; paint(); document.querySelectorAll("[data-color]").forEach(b => b.onclick = () => { color.value = b.dataset.color; paint(); }); document.querySelectorAll("[data-cmd]").forEach(b => b.onclick = () => send(b.dataset.cmd)); document.getElementById("apply").onclick = () => send(color.value.toUpperCase() + " " + bright.value + "%"); document.getElementById("remind").onclick = () => { const what = document.getElementById("what").value.trim(); if (!what) { tg.showAlert("Напиши, що нагадати"); return; } const day = document.getElementById("tomorrow").checked ? "завтра " : ""; send("нагадай " + day + document.getElementById("at").value + " " + what); }; </script> </body> </html>
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Панель</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #17181f);
+    --card: var(--tg-theme-secondary-bg-color, #22232d);
+    --text: var(--tg-theme-text-color, #f1f2f6);
+    --hint: var(--tg-theme-hint-color, #8b8fa3);
+    --btn: rgba(127, 127, 160, .14);
+    --blue: #9fd0f2;
+    --pink: #f7c4d4;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 14px 14px 80px; background: var(--bg); color: var(--text);
+         font: 15px/1.35 -apple-system, "Segoe UI", Roboto, sans-serif; user-select: none; }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; margin-bottom: 12px; }
+  .title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 12px; }
+  .title small { margin-left: auto; color: var(--hint); font-weight: 400; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid + .grid, .grid + .line, .line + .line, .line + .grid { margin-top: 10px; }
+  .line { display: flex; gap: 8px; align-items: center; }
+  button { border: 0; border-radius: 12px; padding: 12px 6px; font-size: 14px; background: var(--btn);
+           color: var(--text); cursor: pointer; transition: transform .08s, opacity .15s; }
+  button:active { transform: scale(.95); opacity: .8; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; }
+  .tile b { font-size: 20px; font-weight: 400; }
+  .dot { width: 38px; height: 38px; border-radius: 50%; padding: 0; flex: none; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px transparent; }
+  .dot.on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--text); }
+  .picker { position: relative; overflow: hidden;
+            background: conic-gradient(#ff6b6b, #ffd36b, #8be38b, #6bd5ff, #8b8bff, #ff8bd5, #ff6b6b); }
+  .picker input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .dots { display: flex; justify-content: space-between; }
+  input[type=range] { flex: 1; height: 28px; accent-color: var(--blue); }
+  .pct { width: 42px; text-align: right; color: var(--hint); }
+  input[type=text] { flex: 1; min-width: 0; padding: 12px; border-radius: 12px; border: 0; outline: 0;
+                     background: var(--btn); color: var(--text); font-size: 15px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { padding: 8px 12px; border-radius: 20px; font-size: 13px; }
+  .chips button.on { background: var(--blue); color: #12324a; }
+  .main { background: var(--blue); color: #12324a; font-weight: 600; width: 100%; }
+  #at { flex: none; width: 84px; text-align: center; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 30px); opacity: 0;
+           background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 14px;
+           transition: all .25s; pointer-events: none; }
+  #toast.show { transform: translate(-50%, 0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="title">💡 Лампа <small id="bv">60%</small></div>
+  <div class="grid">
+    <button data-cmd="💡 Увімкнути">Увімкнути</button>
+    <button data-cmd="🌑 Вимкнути">Вимкнути</button>
+    <button data-cmd="🌙 Нічник">Нічник</button>
+    <button data-cmd="🕯 Тепле">🕯 Тепле</button>
+    <button data-cmd="🌤 Денне">🌤 Денне</button>
+    <button data-cmd="❄️ Холодне">❄️ Холодне</button>
+  </div>
+  <div class="line dots" style="margin-top:14px">
+    <button class="dot" style="background:#f7c4d4" data-color="#F7C4D4"></button>
+    <button class="dot" style="background:#9fd0f2" data-color="#9FD0F2"></button>
+    <button class="dot" style="background:#ff8c69" data-color="#FF8C69"></button>
+    <button class="dot" style="background:#c3a6ef" data-color="#C3A6EF"></button>
+    <button class="dot" style="background:#a8e0b0" data-color="#A8E0B0"></button>
+    <button class="dot picker" id="pickerDot"><input type="color" id="color" value="#ff8c69"></button>
+  </div>
+  <div class="line" style="margin-top:12px">
+    <span>🔅</span><input type="range" id="bright" min="1" max="100" value="60"><span>🔆</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">💻 Ноут</div>
+  <div class="grid">
+    <button class="tile" data-cmd="🔋 Еко"><b>🔋</b>Еко</button>
+    <button class="tile" data-cmd="⚡ Звичайний"><b>⚡</b>Звичайний</button>
+    <button class="tile" data-cmd="📊 Статус"><b>📊</b>Статус</button>
+    <button class="tile" data-cmd="🔌 Станція"><b>🔌</b>Станція</button>
+    <button class="tile" data-cmd="графік"><b>🗓</b>Графік</button>
+    <button class="tile" data-cmd="🔄 Оновити виписку"><b>💰</b>Виписка</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">⏰ Нагадування</div>
+  <div class="line"><input type="text" id="what" placeholder="Що нагадати?"></div>
+  <div class="chips" style="margin-top:10px">
+    <button data-in="15 хв">15 хв</button>
+    <button data-in="30 хв" class="on">30 хв</button>
+    <button data-in="1 год">1 год</button>
+    <button data-in="2 год">2 год</button>
+    <button data-in="">о…</button>
+  </div>
+  <div class="line" id="atLine" style="margin-top:10px; display:none">
+    <input type="text" id="at" inputmode="numeric" placeholder="20:00" maxlength="5">
+    <div class="chips"><button id="tomorrow">завтра</button></div>
+  </div>
+  <div class="line" style="margin-top:12px"><button class="main" id="remind">Нагадати</button></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  const topic = new URLSearchParams(location.search).get("t");
+  const $ = id => document.getElementById(id);
+
+  function toast(text) {
+    $("toast").textContent = text;
+    $("toast").classList.add("show");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => $("toast").classList.remove("show"), 1400);
+  }
+
+  async function send(cmd) {
+    tg.HapticFeedback?.impactOccurred("light");
+    if (!topic) return tg.sendData(cmd);  // old link: fall back to closing mode
+    try {
+      await fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd });
+      toast("✓ Готово");
+    } catch (e) {
+      toast("Немає зв'язку");
+    }
+  }
+
+  // lamp
+  const bright = $("bright");
+  let color = null;
+  function pick(btn, value) {
+    document.querySelectorAll(".dot").forEach(d => d.classList.toggle("on", d === btn));
+    color = value;
+    send(value + " " + bright.value + "%");
+  }
+  document.querySelectorAll("[data-color]").forEach(b => b.onclick = () => pick(b, b.dataset.color));
+  $("color").onchange = e => {
+    $("pickerDot").style.background = e.target.value;
+    pick($("pickerDot"), e.target.value.toUpperCase());
+  };
+  bright.oninput = () => $("bv").textContent = bright.value + "%";
+  bright.onchange = () => send((color ? color + " " : "") + bright.value + "%");
+
+  document.querySelectorAll("[data-cmd]").forEach(b => b.onclick = () => send(b.dataset.cmd));
+
+  // reminders
+  let when = "30 хв", tomorrow = false;
+  document.querySelectorAll("[data-in]").forEach(b => b.onclick = () => {
+    document.querySelectorAll("[data-in]").forEach(x => x.classList.toggle("on", x === b));
+    when = b.dataset.in;
+    $("atLine").style.display = when ? "none" : "flex";
+    if (!when) $("at").focus();
+  });
+  $("tomorrow").onclick = () => { tomorrow = !tomorrow; $("tomorrow").classList.toggle("on", tomorrow); };
+  $("at").oninput = e => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+    e.target.value = v.length > 2 ? v.slice(0, 2) + ":" + v.slice(2) : v;
+  };
+  $("remind").onclick = () => {
+    const what = $("what").value.trim();
+    if (!what) return toast("Напиши, що нагадати");
+    let at;
+    if (when) at = "через " + when;
+    else if (/^\d{1,2}:\d{2}$/.test($("at").value)) at = (tomorrow ? "завтра " : "") + $("at").value;
+    else return toast("Вкажи час, напр. 20:00");
+    send("нагадай " + at + " " + what);
+    $("what").value = "";
+  };
+</script>
+</body>
+</html>
