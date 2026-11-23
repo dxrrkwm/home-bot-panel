@@ -48,10 +48,33 @@
            background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 14px;
            transition: all .25s; pointer-events: none; }
   #toast.show { transform: translate(-50%, 0); opacity: 1; }
+  .big { font-size: 26px; font-weight: 700; }
+  .muted { color: var(--hint); font-size: 13px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .two .card { margin: 0; }
+  .bar { height: 8px; border-radius: 4px; background: var(--btn); overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; border-radius: 4px; background: var(--blue); }
+  .bar i.pink { background: var(--pink); }
+  .cat { display: grid; grid-template-columns: 110px 1fr 64px; gap: 8px; align-items: center; margin-top: 8px; font-size: 13px; }
+  .cat .bar { margin: 0; }
+  .cat span:last-child { text-align: right; }
+  .tx { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--btn); font-size: 14px; }
+  .tx:first-of-type { border: 0; }
+  .tx div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plus { color: #8fdca0; }
+  svg text { fill: var(--hint); font-size: 9px; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
+<div id="fin" style="display:none">
+  <div class="title" style="padding:0 4px"><button id="back" style="padding:6px 10px">←</button> 💰 Фінанси <small id="fUpd">завантажую…</small></div>
+  <div id="fBody"></div>
+</div>
+
+<div id="home">
 <div class="card">
   <div class="title">💡 Лампа <small id="bv">60%</small></div>
   <div class="grid">
@@ -83,7 +106,7 @@
     <button class="tile" data-cmd="📊 Статус"><b>📊</b>Статус</button>
     <button class="tile" data-cmd="🔌 Станція"><b>🔌</b>Станція</button>
     <button class="tile" data-cmd="графік"><b>🗓</b>Графік</button>
-    <button class="tile" data-cmd="🔄 Оновити виписку"><b>💰</b>Виписка</button>
+    <button class="tile" id="openFin"><b>💰</b>Фінанси</button>
   </div>
 </div>
 
@@ -102,6 +125,8 @@
     <div class="chips"><button id="tomorrow">завтра</button></div>
   </div>
   <div class="line" style="margin-top:12px"><button class="main" id="remind">Нагадати</button></div>
+</div>
+
 </div>
 
 <div id="toast"></div>
@@ -172,6 +197,107 @@
     send("нагадай " + at + " " + what);
     $("what").value = "";
   };
+
+  // finance: bot publishes encrypted summary to ntfy, key comes only in the button url
+  const key = new URLSearchParams(location.search).get("k");
+  const b64 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+  const cat = (...a) => { const r = new Uint8Array(a.reduce((n, x) => n + x.length, 0)); let o = 0; a.forEach(x => { r.set(x, o); o += x.length; }); return r; };
+  const money = n => Math.round(n).toLocaleString("uk-UA").replace(/,/g, " ");
+
+  async function unseal(text) {
+    const k = await crypto.subtle.importKey("raw", b64(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const mac = async d => new Uint8Array(await crypto.subtle.sign("HMAC", k, d));
+    const raw = b64(text), nonce = raw.slice(0, 16), ct = raw.slice(16, -16), tag = raw.slice(-16);
+    const want = (await mac(cat([109], nonce, ct))).slice(0, 16);
+    if (want.some((b, i) => b !== tag[i])) throw new Error("bad tag");
+    const out = new Uint8Array(ct.length);
+    for (let i = 0; i * 32 < ct.length; i++) {
+      const block = await mac(cat([101], nonce, new Uint8Array([i >> 24, i >> 16, i >> 8, i].map(x => x & 255))));
+      for (let j = 0; j < 32 && i * 32 + j < ct.length; j++) out[i * 32 + j] = ct[i * 32 + j] ^ block[j];
+    }
+    const stream = new Blob([out]).stream().pipeThrough(new DecompressionStream("deflate"));
+    return JSON.parse(await new Response(stream).text());
+  }
+
+  async function latest(since) {
+    const r = await fetch(`https://ntfy.sh/${topic}d/json?poll=1&since=${since}`);
+    const lines = (await r.text()).trim().split("\n").filter(Boolean).map(JSON.parse).filter(e => e.event === "message");
+    return lines.length ? lines[lines.length - 1] : null;
+  }
+
+  function chart(days, budget) {
+    const w = 320, h = 120, max = Math.max(budget * 1.2, ...days.map(d => d[1])), bw = w / days.length;
+    const y = v => h - 14 - (v / max) * (h - 24);
+    let s = `<svg viewBox="0 0 ${w} ${h}" width="100%">`;
+    days.forEach(([d, v], i) => {
+      s += `<rect x="${i * bw + 3}" y="${y(v)}" width="${bw - 6}" height="${h - 14 - y(v)}" rx="3" fill="${v > budget ? "#f7c4d4" : "#9fd0f2"}"/>`;
+      if (i % 2 === days.length % 2) s += `<text x="${i * bw + bw / 2}" y="${h - 2}" text-anchor="middle">${d.slice(0, 2)}</text>`;
+    });
+    s += `<line x1="0" x2="${w}" y1="${y(budget)}" y2="${y(budget)}" stroke="#8b8fa3" stroke-dasharray="4 4"/>`;
+    return s + `<text x="${w - 2}" y="${y(budget) - 3}" text-anchor="end">${budget}</text></svg>`;
+  }
+
+  function render(d) {
+    $("fUpd").innerHTML = (d.syncing ? '<span class="spin">⟳</span> оновлюю · ' : "") + "оновлено " + d.upd;
+    const today = d.days[d.days.length - 1][1], left = d.budget - today;
+    const cards = d.cards.map(c => c.lim
+      ? `<div class="card"><div class="muted">⚫ ${c.n} · борг</div><div class="big">${money(c.debt)}</div>
+         <div class="bar"><i class="pink" style="width:${100 * c.debt / c.lim}%"></i></div><div class="muted" style="margin-top:4px">з ${money(c.lim)}</div></div>`
+      : `<div class="card"><div class="muted">⚪ ${c.n}</div><div class="big">${money(c.bal)}</div><div class="muted">грн</div></div>`).join("");
+    const jars = d.jars.map(j => `<div style="margin-top:10px"><div class="line"><span>🫙 ${j.n}</span><span class="muted" style="margin-left:auto">${money(j.bal)}${j.goal ? " / " + money(j.goal) : ""}</span></div>
+      ${j.goal ? `<div class="bar"><i style="width:${Math.min(100, 100 * j.bal / j.goal)}%"></i></div>` : ""}</div>`).join("");
+    const top = d.cats.length ? d.cats[0][1] : 1;
+    const cats = d.cats.map(([n, v]) => `<div class="cat"><span>${n}</span><div class="bar"><i style="width:${100 * v / top}%"></i></div><span>${money(v)}</span></div>`).join("");
+    const tx = d.tx.map(([t, desc, a]) => `<div class="tx"><div><div>${desc}</div><div class="muted">${t}</div></div><b class="${a > 0 ? "plus" : ""}">${a > 0 ? "+" : ""}${money(a)}</b></div>`).join("");
+    $("fBody").innerHTML = `
+      <div class="two">${cards}</div>
+      <div class="card" style="margin-top:12px">
+        <div class="line"><span>Сьогодні</span><span class="muted" style="margin-left:auto">${left >= 0 ? "ще можна " + money(left) : "понад на " + money(-left)}</span></div>
+        <div class="big">${money(today)} <span class="muted">/ ${d.budget} грн</span></div>
+        <div class="bar"><i class="${left < 0 ? "pink" : ""}" style="width:${Math.min(100, 100 * today / d.budget)}%"></i></div>
+      </div>
+      <div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>
+      <div class="card"><div class="line"><span>Цей місяць</span></div>
+        <div class="two" style="margin-top:6px"><div><div class="muted">витрати</div><div class="big">${money(d.mspent)}</div></div>
+        <div><div class="muted">надходження</div><div class="big plus">${money(d.mincome)}</div></div></div>${cats}</div>
+      ${jars ? `<div class="card"><div>Банки</div>${jars}</div>` : ""}
+      <div class="card"><div style="margin-bottom:4px">Останні операції</div>${tx}</div>`;
+  }
+
+  let finTimer = null;
+  async function openFin() {
+    $("home").style.display = "none";
+    $("fin").style.display = "block";
+    tg.BackButton.show();
+    try {
+      const cached = await latest("12h");
+      if (cached) render(await unseal(cached.message));
+    } catch (e) {}
+    const since = Math.floor(Date.now() / 1000) - 2;
+    await fetch("https://ntfy.sh/" + topic, { method: "POST", body: "fin-panel" });
+    let lastId = null, tries = 0;
+    clearInterval(finTimer);
+    finTimer = setInterval(async () => {
+      if (++tries > 150) return clearInterval(finTimer);
+      try {
+        const m = await latest(since);
+        if (!m || m.id === lastId) return;
+        lastId = m.id;
+        const d = await unseal(m.message);
+        render(d);
+        if (!d.syncing) clearInterval(finTimer);
+      } catch (e) {}
+    }, 2000);
+  }
+  function closeFin() {
+    clearInterval(finTimer);
+    $("fin").style.display = "none";
+    $("home").style.display = "block";
+    tg.BackButton.hide();
+  }
+  $("openFin").onclick = () => { if (!key) return toast("Відкрий панель з кнопки бота"); openFin(); };
+  tg.BackButton.onClick(closeFin);
+  $("back").onclick = closeFin;
 </script>
 </body>
 </html>
