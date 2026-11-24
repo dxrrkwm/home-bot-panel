@@ -9,6 +9,9 @@ export const connected = Boolean(topic && key);
 
 const listeners = {};
 let waiting = null;
+let opened;
+// resolves when the answer stream is connected, earlier answers would be lost
+export const ready = new Promise(resolve => opened = resolve);
 
 export function on(kind, fn) {
   listeners[kind] = fn;
@@ -21,6 +24,11 @@ export async function send(cmd, onAnswer) {
   await fetch(`https://ntfy.sh/${topic}`, { method: "POST", body: cmd });
 }
 
+// data request: the answer comes to the on(kind) listener, not to send() callbacks
+export async function request(cmd) {
+  if (connected) await fetch(`https://ntfy.sh/${topic}`, { method: "POST", body: cmd });
+}
+
 export async function last(kind, since = "12h") {
   const r = await fetch(`https://ntfy.sh/${topic}d/json?poll=1&since=${since}`);
   const lines = (await r.text()).trim().split("\n").filter(Boolean).map(JSON.parse);
@@ -31,6 +39,7 @@ export async function last(kind, since = "12h") {
 export function listen() {
   if (!connected) return;
   const es = new EventSource(`https://ntfy.sh/${topic}d/sse`);
+  es.onopen = () => opened();
   es.onmessage = async e => {
     const m = JSON.parse(e.data);
     if (m.event !== "message") return;

@@ -18,8 +18,8 @@ export function card(title, body, extra = "") {
   return `<div class="card" ${extra}><div class="title">${title}</div>${body}</div>`;
 }
 
-// screens: home is always at the bottom of the stack
-const stack = ["home"];
+// screens: home is always at the bottom of the stack, each entry keeps its scroll position
+const stack = [{ id: "home", y: 0 }];
 
 export function screen(id, title) {
   document.body.insertAdjacentHTML("beforeend", `<section class="screen" id="${id}" hidden>
@@ -28,12 +28,16 @@ export function screen(id, title) {
   return $("#" + id);
 }
 
+const top = () => stack[stack.length - 1];
+
 export function isOpen(id) {
-  return stack[stack.length - 1] === id;
+  return top().id === id;
 }
 
 export function open(id) {
-  if (!isOpen(id)) stack.push(id);
+  if (isOpen(id)) return;
+  top().y = window.scrollY;  // come back to the same place
+  stack.push({ id, y: 0 });
   show();
 }
 
@@ -43,10 +47,10 @@ export function back() {
 }
 
 function show() {
-  const top = stack[stack.length - 1];
-  $$(".screen").forEach(s => s.hidden = s.id !== top);
+  const { id, y } = top();
+  $$(".screen").forEach(s => s.hidden = s.id !== id);
   stack.length > 1 ? tg.BackButton.show() : tg.BackButton.hide();
-  window.scrollTo(0, 0);
+  window.scrollTo(0, y);
 }
 
 tg.BackButton.onClick(back);
