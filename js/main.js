@@ -1,13 +1,13 @@
 import { tg } from "./tg.js";
 import { on, listen } from "./bus.js";
 import { $, toast } from "./ui.js";
+import * as finance from "./sections/finance.js";
 import * as lamp from "./sections/lamp.js";
-import * as laptop from "./sections/laptop.js";
-import * as reminders from "./sections/reminders.js";
 import * as power from "./sections/power.js";
+import * as reminders from "./sections/reminders.js";
 
-// home screen cards, top to bottom; a new section is a new file here
-const SECTIONS = [power, lamp, laptop, reminders];
+// home screen cards, top to bottom: a glance and a tap into the screen, lamp is controlled right here
+const SECTIONS = [power, lamp, finance, reminders];
 
 tg.ready();
 tg.expand();

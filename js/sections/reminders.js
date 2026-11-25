@@ -1,11 +1,13 @@
 import { send } from "../bus.js";
-import { $, $$, card, toast } from "../ui.js";
+import { icon } from "../icons.js";
+import { $, $$, head, toast } from "../ui.js";
 import { ask } from "./answer.js";
 
 const SOON = ["15 хв", "30 хв", "1 год", "2 год"];
 
 export function mount(home) {
-  home.insertAdjacentHTML("beforeend", card("⏰ Нагадування", `
+  home.insertAdjacentHTML("beforeend", `<div class="card" id="reminders">
+    ${head("bell", "Нагадування", "", "", "pink")}
     <div class="line"><input type="text" id="what" placeholder="Що нагадати?"></div>
     <div class="chips gap">
       ${SOON.map(s => `<button data-in="${s}" class="${s === "30 хв" ? "on" : ""}">${s}</button>`).join("")}
@@ -16,10 +18,10 @@ export function mount(home) {
       <div class="chips"><button id="tomorrow">завтра</button></div>
     </div>
     <div class="line gap"><button class="main" id="remind">Нагадати</button></div>
-    <div class="grid two gap">
-      <button data-ask="📋 Список">📋 Мої нагадування</button>
-      <button data-ask="💊 Таблетки">💊 Таблетки</button>
-    </div>`, 'id="reminders"'));
+    <div class="chips gap">
+      <button data-ask="📋 Список" data-title="Мої нагадування">${icon("list", 16)} Мої нагадування</button>
+      <button data-ask="💊 Таблетки" data-title="Таблетки">${icon("pill", 16)} Таблетки</button>
+    </div></div>`);
 
   const root = $("#reminders");
   let when = "30 хв", tomorrow = false;
@@ -49,5 +51,5 @@ export function mount(home) {
     send(`нагадай ${at} ${what}`, d => toast(d.text.split("\n")[0]));
     $("#what").value = "";
   };
-  $$("[data-ask]", root).forEach(b => b.onclick = () => ask(b.dataset.ask, b.textContent));
+  $$("[data-ask]", root).forEach(b => b.onclick = () => ask(b.dataset.ask, b.dataset.title));
 }

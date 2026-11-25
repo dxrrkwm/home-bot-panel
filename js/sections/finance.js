@@ -1,7 +1,8 @@
-import { send, on, last, connected } from "../bus.js";
-import { $, $$, esc, money, loading, screen, open, isOpen, toast } from "../ui.js";
+import { send, request, on, last, ready, connected } from "../bus.js";
+import { $, $$, esc, money, loading, screen, open, isOpen, toast, busy, head } from "../ui.js";
 
-const fin = screen("finance", "💰 Фінанси");
+// manual refresh also pulls a fresh monobank statement
+const fin = screen("finance", "Фінанси", { refresh: () => request("fin-panel:force") });
 const detail = screen("detail", "");
 
 export async function openFinance() {
@@ -13,7 +14,28 @@ export async function openFinance() {
   send("fin-panel");
 }
 
-on("fin", data => isOpen("finance") && render(data));
+on("fin", data => {
+  renderCard(data);
+  if (isOpen("finance")) render(data);
+});
+
+// home card: today against the daily budget
+function renderCard(d) {
+  const spent = d.days[d.days.length - 1][1], over = spent > d.budget;
+  $("[data-sub]", $("#finCard")).textContent = `сьогодні ${money(spent)} з ${d.budget} грн · місяць ${money(d.mspent)}`;
+  $("#finBar").innerHTML = `<i class="${over ? "pink" : ""}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i>`;
+}
+
+export function mount(home) {
+  home.insertAdjacentHTML("beforeend", `<div class="card tap" id="finCard">
+    ${head("wallet", "Фінанси", "…", undefined, "green")}<div class="bar" id="finBar"></div></div>`);
+  $("#finCard").onclick = openFinance;
+  // only the cached summary here: asking the bot would start a bank sync on every panel open
+  ready.then(async () => {
+    const cached = await last("fin", "48h").catch(() => null);
+    if (cached) renderCard(cached);
+  });
+}
 on("detail", data => isOpen("detail") && renderDetail(data));
 
 function openDetail(id, title) {
@@ -104,7 +126,8 @@ function operations(d) {
 }
 
 function render(d) {
-  $("[data-note]", fin).innerHTML = (d.syncing ? '<span class="spin">⟳</span> оновлюю · ' : "") + "оновлено " + d.upd;
+  busy(fin, Boolean(d.syncing));
+  $("[data-note]", fin).textContent = d.syncing ? "оновлюю виписку…" : "оновлено " + d.upd;
   const body = $("[data-body]", fin);
   body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}
     <div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>

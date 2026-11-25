@@ -1,12 +1,13 @@
-// power: station battery, is there power, outages for 7 days, controls
+// power: is there power, station battery, controls, outages for 7 days vs the schedule
 import { send, request, on, last, ready, connected } from "../bus.js";
-import { $, $$, esc, loading, screen, open, isOpen, toast } from "../ui.js";
+import { icon } from "../icons.js";
+import { $, $$, esc, loading, screen, open, isOpen, toast, busy } from "../ui.js";
 import { ask } from "./answer.js";
 
 const REFRESH_MS = 30000;
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
-const el = screen("power", "⚡ Живлення");
+const el = screen("power", "Живлення", { refresh: () => request("station-panel:force") });
 const body = $("[data-body]", el);
 let data = null;
 let timer = null;
@@ -29,7 +30,7 @@ function ring(pct, cls, size = 132) {
   return `<svg class="ring ${cls}" viewBox="0 0 120 120" width="${size}" height="${size}">
     <circle cx="60" cy="60" r="${r}" class="track"/>
     <circle cx="60" cy="60" r="${r}" class="fill" stroke-dasharray="${c * v / 100} ${c}" transform="rotate(-90 60 60)"/>
-    <text x="60" y="${size > 80 ? 66 : 70}" text-anchor="middle" class="pct">${pct ?? "—"}<tspan class="unit">%</tspan></text></svg>`;
+    <text x="60" y="${size > 80 ? 66 : 72}" text-anchor="middle" class="pct">${pct ?? "—"}${size > 80 ? '<tspan class="unit">%</tspan>' : ""}</text></svg>`;
 }
 
 function stationLine(d) {
@@ -37,7 +38,7 @@ function stationLine(d) {
   if (!d.configured) return "станція не підключена";
   if (!s) return "немає даних";
   if (!s.online) return "станція вимкнена або без Wi-Fi";
-  if (s.mode === "supply") return `живить від батареї · вистачить ≈ ${hm(d.est)}`;
+  if (s.mode === "supply") return `від батареї · вистачить ≈ ${hm(d.est)}`;
   if (s.mode === "charging") return s.charge ? `заряджається · до 100% ≈ ${hm(s.charge)}` : "від мережі";
   return "простоює";
 }
@@ -45,11 +46,9 @@ function stationLine(d) {
 // home card: one look tells if there is power and how long the station lasts
 function renderCard(d) {
   const h = headline(d), s = d.station;
-  $("#powerCard").innerHTML = `<div class="power-mini">
-    ${ring(s?.online ? s.pct : null, h.cls, 56)}
-    <div class="grow"><div class="state ${h.cls}">${h.text}${h.sub && h.cls === "off" ? ` · ${h.sub}` : ""}</div>
-    <div class="muted">${esc(stationLine(d))}${d.ups ? " · UPS" : ""}</div></div>
-    <span class="arrow">›</span></div>`;
+  $("#powerCard").innerHTML = `<div class="head-row">${ring(s?.online ? s.pct : null, h.cls, 44)}
+    <div class="grow"><div class="h-title state ${h.cls}">${h.text}${h.cls === "off" && h.sub ? ` · ${h.sub}` : ""}</div>
+    <div class="h-sub">${esc(stationLine(d))}</div></div><div class="h-right">${icon("chevron", 18)}</div></div>`;
 }
 
 function flow(d) {
@@ -65,25 +64,22 @@ function chips(d) {
   const s = d.station, l = d.laptop;
   const chip = (text, cls = "") => `<span class="chip ${cls}">${text}</span>`;
   return `<div class="chips-row">
-    ${chip(d.ups ? "UPS увімкнено" : "UPS вимкнено", d.ups ? "ok" : "")}
     ${s?.online ? chip(s.ac ? "розетка AC увімк." : "розетка AC вимк.", s.ac ? "" : "warn") : ""}
-    ${chip(`ноут ${l.ac ? "від мережі" : "на батареї " + l.pct + "%"}`, l.ac ? "" : "warn")}
-    ${chip(l.eco ? "Еко" : "звичайний режим")}
+    ${chip(`ноут ${l.ac ? "від мережі" : "на батареї"}${l.pct != null ? " · " + l.pct + "%" : ""}`, l.ac ? "" : "warn")}
     ${s?.online && s.temp != null ? chip(`${s.temp}°`) : ""}</div>`;
+}
+
+function seg(cmdOn, cmdOff, isOn, labels = ["Увімк.", "Вимк."]) {
+  return `<div class="seg"><button data-cmd="${cmdOn}" class="${isOn ? "on" : ""}">${labels[0]}</button>
+    <button data-cmd="${cmdOff}" class="${isOn === false ? "on" : ""}">${labels[1]}</button></div>`;
 }
 
 function controls(d) {
   const s = d.station;
-  return `<div class="card"><div class="title">Керування</div>
-    <div class="setting"><span>Розетка AC</span><div class="seg">
-      <button data-cmd="ac:on" class="${s?.ac ? "on" : ""}">Увімк.</button>
-      <button data-cmd="ac:off" class="${s && !s.ac ? "on" : ""}">Вимк.</button></div></div>
-    <div class="setting"><span>Режим UPS<div class="muted">станція постійно в розетці</div></span><div class="seg">
-      <button data-cmd="ups on" class="${d.ups ? "on" : ""}">Так</button>
-      <button data-cmd="ups off" class="${d.ups ? "" : "on"}">Ні</button></div></div>
-    <div class="setting"><span>Ноут</span><div class="seg">
-      <button data-cmd="🔋 Еко" class="${d.laptop.eco ? "on" : ""}">Еко</button>
-      <button data-cmd="⚡ Звичайний" class="${d.laptop.eco ? "" : "on"}">Звичайний</button></div></div></div>`;
+  return `<div class="card">
+    <div class="setting"><span>Розетка AC</span>${seg("ac:on", "ac:off", s ? s.ac : null)}</div>
+    <div class="setting"><span>Режим UPS<div class="muted">станція постійно в розетці</div></span>${seg("ups on", "ups off", d.ups, ["Так", "Ні"])}</div>
+    <div class="setting"><span>Ноут</span>${seg("🔋 Еко", "⚡ Звичайний", d.laptop.eco, ["Еко", "Звичайний"])}</div></div>`;
 }
 
 function battery(hist) {
@@ -92,7 +88,10 @@ function battery(hist) {
   const x = t => 4 + (t - t0) / Math.max(1, t1 - t0) * (w - 8);
   const y = v => 6 + (100 - v) / 100 * (h - 22);
   const pts = hist.map(([t, v]) => `${x(t).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const time = t => new Date(t * 1000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+  const time = t => {
+    const d = new Date(t * 1000), hm = d.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+    return d.toDateString() === new Date().toDateString() ? hm : "вчора " + hm;
+  };
   return `<div class="card"><div class="line"><span>Заряд станції</span><span class="muted push">24 год</span></div>
     <svg viewBox="0 0 ${w} ${h}" width="100%">
       <line x1="4" x2="${w - 4}" y1="${y(50)}" y2="${y(50)}" class="grid-line"/>
@@ -103,65 +102,66 @@ function battery(hist) {
 
 // one row per day: what the schedule said (outline) and what really happened (filled)
 function outages(d) {
-  const seg = (list, cls) => list.map(([a, b]) =>
+  const segs = (list, cls) => list.map(([a, b]) =>
     `<i class="${cls}" style="left:${a / 14.4}%;width:${Math.max(0.6, (b - a) / 14.4)}%"></i>`).join("");
   const rows = d.days.map(day => `<div class="day"><span>${DAYS[day.w]} ${day.d.slice(0, 2)}</span>
-    <div class="track24">${seg(day.plan, "plan")}${seg(day.off, "fact")}</div></div>`).join("");
+    <div class="track24">${segs(day.plan, "plan")}${segs(day.off, "fact")}</div></div>`).join("");
   const facts = [`${d.count} разів`, `${String(d.hours).replace(".", ",")} год без світла`];
   if (d.drain) facts.push(`станція −${String(d.drain).replace(".", ",")}%/год`);
   if (d.charge_rate) facts.push(`заряд +${d.charge_rate}%/год`);
+  const plan = (d.plan || []).map(([day, a, b]) => `<div class="row"><div>${day}</div><div>${a}–${b}</div></div>`).join("");
   return `<div class="card"><div class="line"><span>Відключення</span><span class="muted push">7 днів</span></div>
     <div class="muted gap">${facts.join(" · ")}</div>
-    <div class="days">${rows}<div class="day axis"><span></span><div class="ticks"><b>0</b><b>6</b><b>12</b><b>18</b><b>24</b></div></div></div>
-    <div class="legend muted"><span><i class="fact"></i>було</span><span><i class="plan"></i>за графіком${d.group ? " " + esc(d.group) : ""}</span></div>
-    ${d.next ? `<div class="muted gap">Наступне за графіком: ${d.next[0]}–${d.next[1]}</div>` : ""}</div>`;
+    <div class="days">${rows}<div class="day"><span></span><div class="ticks"><b>0</b><b>6</b><b>12</b><b>18</b><b>24</b></div></div></div>
+    <div class="legend muted"><span><i class="fact"></i>було</span><span><i class="plan"></i>за графіком</span></div></div>
+    <div class="card"><div class="line"><span>За графіком${d.group ? " · черга " + esc(d.group) : ""}</span></div>
+    ${plan ? `<div class="plan-list">${plan}</div>` : '<div class="muted gap">відключень не заплановано</div>'}</div>`;
 }
 
 function render(d) {
   data = d;
+  busy(el, false);
   renderCard(d);
   if (!isOpen("power")) return;
   const h = headline(d);
   $("[data-note]", el).textContent = "оновлено " + d.upd;
-  body.innerHTML = `<div class="card hero">
+  body.innerHTML = `<div class="card">
       <div class="state big-state ${h.cls}">${h.text}</div>${h.sub ? `<div class="muted center">${esc(h.sub)}</div>` : ""}
       ${flow(d)}${chips(d)}
       ${d.error && d.station && !d.station.online ? `<div class="muted center gap">${esc(d.error)}</div>` : ""}</div>
     ${controls(d)}${battery(d.hist)}${outages(d)}
-    <button class="wide" id="statsText">Підсумок текстом</button>`;
+    <button class="wide" id="statsText">${icon("text", 18)} Підсумок текстом</button>`;
   $$("[data-cmd]", body).forEach(b => b.onclick = () => press(b));
-  $("#statsText").onclick = () => ask("station_stats", "📊 Статистика");
+  $("#statsText").onclick = () => ask("station_stats", "Підсумок");
 }
 
 function press(b) {
-  $$(`[data-cmd]`, b.parentElement).forEach(x => x.classList.toggle("on", x === b));
+  $$("button", b.parentElement).forEach(x => x.classList.toggle("on", x === b));
   send(b.dataset.cmd, reply => {
     toast(reply.text.split("\n")[0]);
-    setTimeout(refresh, 1500);
+    setTimeout(() => request("station-panel"), 1500);
   });
 }
-
-const refresh = () => request("station-panel");
 
 export async function openPower() {
   if (!connected) return toast("Відкрий панель з кнопки бота");
   open("power");
   if (data) render(data);
   else body.innerHTML = `<div class="card">${loading}</div>`;
-  refresh();
+  request("station-panel");
   clearInterval(timer);
-  timer = setInterval(() => isOpen("power") ? refresh() : clearInterval(timer), REFRESH_MS);
+  timer = setInterval(() => isOpen("power") ? request("station-panel") : clearInterval(timer), REFRESH_MS);
 }
 
 export function mount(home) {
   home.insertAdjacentHTML("beforeend", `<div class="card tap" id="powerCard">
-    <div class="power-mini"><div class="grow muted">${loading}</div></div></div>`);
+    <div class="head-row"><span class="ico">${icon("zap")}</span><div class="grow muted">${loading}</div></div></div>`);
   $("#powerCard").onclick = openPower;
   on("station", render);
   // show the last known state at once, then ask the bot for a fresh one
   ready.then(async () => {
     const cached = await last("station").catch(() => null);
     if (cached && !data) render(cached);
-    refresh();
+    request("station-panel");
   });
 }
