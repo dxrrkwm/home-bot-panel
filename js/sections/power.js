@@ -88,6 +88,9 @@ function controls(d) {
   return `<div class="card">
     <div class="setting"><span>Розетка AC</span>${seg("ac:on", "ac:off", s ? s.ac : null)}</div>
     <div class="setting"><span>Режим UPS<div class="muted">станція постійно в розетці</div></span>${seg("ups on", "ups off", d.ups, ["Так", "Ні"])}</div>
+    <div class="setting"><span>Ліхтар</span><div class="seg">
+      ${[[0, "Вимк."], [1, "Світло"], [2, "Блимає"]].map(([m, label]) =>
+        `<button data-cmd="led:${m}" class="${s?.online && s.led === m ? "on" : ""}">${label}</button>`).join("")}</div></div>
     <div class="setting"><span>Ноут</span>${seg("🔋 Еко", "⚡ Звичайний", d.laptop.eco, ["Еко", "Звичайний"])}</div></div>`;
 }
 
