@@ -2,12 +2,13 @@ import { send } from "../bus.js";
 import { $, $$, card } from "../ui.js";
 import { ask } from "./answer.js";
 import { openFinance } from "./finance.js";
+import { openPower } from "./power.js";
 
 const TILES = [
   ["🔋", "Еко", { cmd: "🔋 Еко" }],
   ["⚡", "Звичайний", { cmd: "⚡ Звичайний" }],
   ["📊", "Статус", { view: "📊 Статус" }],
-  ["🔌", "Станція", { view: "🔌 Станція" }],
+  ["🔌", "Станція", { open: openPower }],
   ["🗓", "Графік", { view: "графік" }],
   ["💰", "Фінанси", { open: openFinance }],
 ];

@@ -4,9 +4,10 @@ import { $, toast } from "./ui.js";
 import * as lamp from "./sections/lamp.js";
 import * as laptop from "./sections/laptop.js";
 import * as reminders from "./sections/reminders.js";
+import * as power from "./sections/power.js";
 
 // home screen cards, top to bottom; a new section is a new file here
-const SECTIONS = [lamp, laptop, reminders];
+const SECTIONS = [power, lamp, laptop, reminders];
 
 tg.ready();
 tg.expand();
