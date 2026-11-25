@@ -26,7 +26,7 @@ const repeatText = m => !m ? "без повтору" : m % 60 ? `кожні ${m}
 
 function form(r) {
   return `<div class="edit">
-    <input type="text" data-f="text" value="${esc(r.text)}">
+    <textarea data-f="text" rows="3">${esc(r.text)}</textarea>
     <input type="datetime-local" data-f="ts" value="${local(r.ts)}">
     <div class="muted">Повтор, поки не натиснеш «Зроблено»</div>
     <div class="chips">${REPEAT.map(([m, label]) =>

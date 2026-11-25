@@ -135,3 +135,5 @@ svg text { fill: var(--hint); font-size: 9px; }
 input[type=datetime-local] { padding: 12px; border-radius: var(--r-ctl); border: 0; background: var(--btn);
                              color: var(--text); font: inherit; color-scheme: dark; }
 button.danger { color: var(--bad); }
+textarea { padding: 12px; border-radius: var(--r-ctl); border: 0; outline: 0; background: var(--btn); color: var(--text);
+           font: inherit; resize: vertical; }
