@@ -1,4 +1,4 @@
-import { send, request, on, last, ready, connected } from "../bus.js";
+import { request, on, last, ready, connected } from "../bus.js";
 import { $, $$, esc, money, loading, screen, open, isOpen, toast, busy, head } from "../ui.js";
 
 // manual refresh also pulls a fresh monobank statement
@@ -11,7 +11,7 @@ export async function openFinance() {
   if (!$("[data-body]", fin).innerHTML) $("[data-body]", fin).innerHTML = `<div class="card">${loading}</div>`;
   const cached = await last("fin").catch(() => null);
   if (cached) render(cached);
-  send("fin-panel");
+  request("fin-panel");
 }
 
 on("fin", data => {
@@ -43,7 +43,7 @@ function openDetail(id, title) {
   $("[data-note]", detail).textContent = "";
   $("[data-body]", detail).innerHTML = `<div class="card">${loading}</div>`;
   open("detail");
-  send("fin-detail:" + id);
+  request("fin-detail:" + id);
 }
 
 function renderDetail(d) {
