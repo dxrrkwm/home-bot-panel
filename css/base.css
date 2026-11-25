@@ -1,4 +1,5 @@
-/* one design code: telegram theme colors, pastel blue/pink accents, 16px cards, 12px controls */
+/* one design code: telegram theme colors; pastel blue and pink are the accent, the palette around them is soft too.
+   meaning: --good fits / ok, --bad over / failed / no power, --green money in */
 :root {
   --bg: var(--tg-theme-bg-color, #17181f);
   --card: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color, #22232d));
@@ -8,6 +9,8 @@
   --blue: #9fd0f2;
   --pink: #f7c4d4;
   --green: #8fdca0;
+  --good: #e8f5e8;
+  --bad: #ff746c;
   --amber: #f3d59b;
   --r-card: 18px;
   --r-ctl: 12px;
@@ -63,6 +66,8 @@ button.wide { width: 100%; margin-bottom: 10px; display: flex; align-items: cent
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chips button { padding: 8px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
 .chips button.on { background: var(--blue); color: #12324a; }
+svg .ok { fill: var(--good); }
+svg .over { fill: var(--bad); }
 
 /* switch */
 .switch { width: 46px; height: 28px; border-radius: 14px; padding: 0; position: relative; background: var(--btn); }
@@ -97,13 +102,15 @@ input[type=range] { flex: 1; height: 28px; accent-color: var(--blue); }
          background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 20px; font-size: 14px;
          transition: all .25s; pointer-events: none; }
 #toast.show { transform: translate(-50%, 0); opacity: 1; }
+#toast.error { background: var(--bad); color: #3a0d0a; }
 
 .big { font-size: 26px; font-weight: 700; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 .pair .card { margin: 0; }
 .bar { height: 8px; border-radius: 4px; background: var(--btn); overflow: hidden; margin-top: 8px; }
 .bar i { display: block; height: 100%; border-radius: 4px; background: var(--blue); }
-.bar i.pink { background: var(--pink); }
+.bar i.good { background: var(--good); }
+.bar i.bad { background: var(--bad); }
 
 .row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--btn); font-size: 14px; }
 .row:first-of-type { border: 0; }

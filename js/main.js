@@ -1,5 +1,5 @@
 import { tg } from "./tg.js";
-import { on, listen } from "./bus.js";
+import { onFailure, listen } from "./bus.js";
 import { $, toast } from "./ui.js";
 import * as finance from "./sections/finance.js";
 import * as lamp from "./sections/lamp.js";
@@ -15,5 +15,6 @@ tg.expand();
 const home = $("#home");
 SECTIONS.forEach(s => s.mount(home));
 
-on("reply", d => toast(d.text.split("\n")[0]));
+// a failed command or a bot that does not answer shows up as a red toast
+onFailure(d => toast(d.text.split("\n")[0].replace(/^[^\p{L}\d]+/u, ""), true));
 listen();

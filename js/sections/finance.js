@@ -23,7 +23,7 @@ on("fin", data => {
 function renderCard(d) {
   const spent = d.days[d.days.length - 1][1], over = spent > d.budget;
   $("[data-sub]", $("#finCard")).textContent = `сьогодні ${money(spent)} з ${d.budget} грн · місяць ${money(d.mspent)}`;
-  $("#finBar").innerHTML = `<i class="${over ? "pink" : ""}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i>`;
+  $("#finBar").innerHTML = `<i class="${over ? "bad" : "good"}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i>`;
 }
 
 export function mount(home) {
@@ -59,7 +59,7 @@ function chart(days, budget) {
   const max = Math.max(budget * 1.2, ...days.map(d => d[1]));
   const y = v => h - 14 - (v / max) * (h - 24);
   const bars = days.map(([day, v], i) =>
-    `<rect x="${i * bw + 3}" y="${y(v)}" width="${bw - 6}" height="${h - 14 - y(v)}" rx="3" fill="${v > budget ? "#f7c4d4" : "#9fd0f2"}"/>` +
+    `<rect x="${i * bw + 3}" y="${y(v)}" width="${bw - 6}" height="${h - 14 - y(v)}" rx="3" class="${v > budget ? "over" : "ok"}"/>` +
     (i % 2 === days.length % 2 ? `<text x="${i * bw + bw / 2}" y="${h - 2}" text-anchor="middle">${day.slice(0, 2)}</text>` : "")).join("");
   return `<svg viewBox="0 0 ${w} ${h}" width="100%">${bars}
     <line x1="0" x2="${w}" y1="${y(budget)}" y2="${y(budget)}" stroke="#8b8fa3" stroke-dasharray="4 4"/>
@@ -69,7 +69,7 @@ function chart(days, budget) {
 function cards(d) {
   return d.cards.map(c => c.lim
     ? `<div class="card"><div class="muted">⚫ ${esc(c.n)} · борг</div><div class="big">${money(c.debt)}</div>
-       <div class="bar"><i class="pink" style="width:${100 * c.debt / c.lim}%"></i></div><div class="muted">з ${money(c.lim)}</div></div>`
+       <div class="bar"><i class="bad" style="width:${100 * c.debt / c.lim}%"></i></div><div class="muted">з ${money(c.lim)}</div></div>`
     : `<div class="card"><div class="muted">⚪ ${esc(c.n)}</div><div class="big">${money(c.bal)}</div><div class="muted">грн</div></div>`).join("");
 }
 
@@ -78,7 +78,7 @@ function today(d) {
   return `<div class="card"><div class="line"><span>Сьогодні</span>
       <span class="muted" style="margin-left:auto">${left >= 0 ? "ще можна " + money(left) : "понад на " + money(-left)}</span></div>
     <div class="big">${money(spent)} <span class="muted">/ ${d.budget} грн</span></div>
-    <div class="bar"><i class="${left < 0 ? "pink" : ""}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i></div></div>`;
+    <div class="bar"><i class="${left < 0 ? "bad" : "good"}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i></div></div>`;
 }
 
 function month(d) {

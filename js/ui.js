@@ -7,12 +7,13 @@ export const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": 
 export const money = n => Math.round(n).toLocaleString("uk-UA").replace(/,/g, " ");
 export const loading = '<span class="spin">⟳</span> завантажую…';
 
-export function toast(text) {
+export function toast(text, error = false) {
   const el = $("#toast");
   el.textContent = text;
+  el.classList.toggle("error", error);
   el.classList.add("show");
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+  toast.timer = setTimeout(() => el.classList.remove("show"), error ? 3500 : 2200);
 }
 
 export function card(title, body, extra = "") {
