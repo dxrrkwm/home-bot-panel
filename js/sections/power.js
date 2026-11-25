@@ -3,6 +3,13 @@ import { send, request, on, last, ready, connected } from "../bus.js";
 import { icon } from "../icons.js";
 import { $, $$, esc, loading, screen, open, isOpen, toast, busy } from "../ui.js";
 import { ask } from "./answer.js";
+import { confirm } from "../tg.js";
+
+// what a command does to the things plugged into the station: asked before it runs
+const WARN = {
+  "ac:off": "Вимкнути розетку AC на станції?\n\nУсе, що в неї ввімкнено (ноут, роутер), лишиться без живлення: " +
+            "ноут перейде на свою батарею, інтернет зникне.",
+};
 
 const REFRESH_MS = 30000;
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
@@ -25,12 +32,13 @@ function headline(d) {
   return { text: "Світло: невідомо", sub: "станція не на зв'язку", cls: "" };
 }
 
-function ring(pct, cls, size = 132) {
+function ring(pct, cls, size = 132, temp = null) {
   const r = 52, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct ?? 0));
   return `<svg class="ring ${cls}" viewBox="0 0 120 120" width="${size}" height="${size}">
     <circle cx="60" cy="60" r="${r}" class="track"/>
     <circle cx="60" cy="60" r="${r}" class="fill" stroke-dasharray="${c * v / 100} ${c}" transform="rotate(-90 60 60)"/>
-    <text x="60" y="${size > 80 ? 66 : 72}" text-anchor="middle" class="pct">${pct ?? "—"}${size > 80 ? '<tspan class="unit">%</tspan>' : ""}</text></svg>`;
+    <text x="60" y="${size > 80 ? 64 : 72}" text-anchor="middle" class="pct">${pct ?? "—"}${size > 80 ? '<tspan class="unit">%</tspan>' : ""}</text>
+    ${temp != null ? `<text x="60" y="84" text-anchor="middle" class="temp">${temp}°C</text>` : ""}</svg>`;
 }
 
 function stationLine(d) {
@@ -38,9 +46,9 @@ function stationLine(d) {
   if (!d.configured) return "станція не підключена";
   if (!s) return "немає даних";
   if (!s.online) return "станція вимкнена або без Wi-Fi";
-  if (s.mode === "supply") return `від батареї · вистачить ≈ ${hm(d.est)}`;
-  if (s.mode === "charging") return s.charge ? `заряджається · до 100% ≈ ${hm(s.charge)}` : "від мережі";
-  return "простоює";
+  if (s.mode === "supply") return `станція живить ноут і роутер · вистачить ≈ ${hm(d.est)}`;
+  if (s.mode === "charging") return s.charge ? `станція заряджається · до 100% ≈ ${hm(s.charge)}` : "станція від розетки, батарея повна";
+  return "станція нічого не живить";
 }
 
 // home card: one look tells if there is power and how long the station lasts
@@ -48,15 +56,15 @@ function renderCard(d) {
   const h = headline(d), s = d.station;
   $("#powerCard").innerHTML = `<div class="head-row">${ring(s?.online ? s.pct : null, h.cls, 44)}
     <div class="grow"><div class="h-title state ${h.cls}">${h.text}${h.cls === "off" && h.sub ? ` · ${h.sub}` : ""}</div>
-    <div class="h-sub">${esc(stationLine(d))}</div></div><div class="h-right">${icon("chevron", 18)}</div></div>`;
+    <div class="h-sub">${esc(s?.online && s.mode === "supply" ? `все від станції · вистачить ≈ ${hm(d.est)}` : stationLine(d))}</div></div><div class="h-right">${icon("chevron", 18)}</div></div>`;
 }
 
 function flow(d) {
   const s = d.station, on = s?.online;
   return `<div class="flow">
-    <div class="flow-side"><span class="muted">з мережі</span><b>${on ? s.in : "—"} <small>W</small></b></div>
-    ${ring(on ? s.pct : null, headline(d).cls)}
-    <div class="flow-side"><span class="muted">на пристрої</span><b>${on ? s.out : "—"} <small>W</small></b></div></div>
+    <div class="flow-side"><span class="muted">з розетки</span><b>${on ? s.in : "—"} <small>W</small></b></div>
+    ${ring(on ? s.pct : null, headline(d).cls, 132, on ? s.temp : null)}
+    <div class="flow-side"><span class="muted">віддає</span><b>${on ? s.out : "—"} <small>W</small></b></div></div>
     <div class="center muted">${esc(stationLine(d))}</div>`;
 }
 
@@ -65,8 +73,7 @@ function chips(d) {
   const chip = (text, cls = "") => `<span class="chip ${cls}">${text}</span>`;
   return `<div class="chips-row">
     ${s?.online ? chip(s.ac ? "розетка AC увімк." : "розетка AC вимк.", s.ac ? "" : "warn") : ""}
-    ${chip(`ноут ${l.ac ? "від мережі" : "на батареї"}${l.pct != null ? " · " + l.pct + "%" : ""}`, l.ac ? "" : "warn")}
-    ${s?.online && s.temp != null ? chip(`${s.temp}°`) : ""}</div>`;
+    ${chip(l.ac ? `батарея ноута ${l.pct ?? "—"}%` : `ноут на своїй батареї · ${l.pct ?? "—"}%`, l.ac ? "" : "warn")}</div>`;
 }
 
 function seg(cmdOn, cmdOff, isOn, labels = ["Увімк.", "Вимк."]) {
@@ -135,7 +142,9 @@ function render(d) {
   $("#statsText").onclick = () => ask("station_stats", "Підсумок");
 }
 
-function press(b) {
+async function press(b) {
+  const warn = WARN[b.dataset.cmd];
+  if (warn && !await confirm(warn)) return;
   $$("button", b.parentElement).forEach(x => x.classList.toggle("on", x === b));
   send(b.dataset.cmd, reply => {
     toast(reply.text.split("\n")[0]);
