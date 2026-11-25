@@ -9,7 +9,7 @@ const key = params.get("k");
 export const connected = Boolean(topic && key);
 
 const BROKER = "wss://broker.hivemq.com:8884/mqtt";
-const MQTT_WAIT_MS = 4000;
+const MQTT_WAIT_MS = 6000;
 const ANSWER_MS = 20000;
 // bot answers that mean "did not work"; the panel shows them as an error toast
 const FAILED = /не вийшло|не вдалось|помилка|недоступн|не відповідає|не в мережі/i;
@@ -38,8 +38,13 @@ const viaMqtt = () => client?.connected;
 
 async function post(cmd, id = crypto.randomUUID()) {
   const body = await seal({ c: cmd, id, ts: Date.now() }, key);
-  if (viaMqtt()) client.publish(`hb/${topic}/cmd`, body, { qos: 1 });
-  else await fetch(`https://ntfy.sh/${topic}`, { method: "POST", body });
+  if (viaMqtt()) {
+    client.publish(`hb/${topic}/cmd`, body, { qos: 1 });
+    return id;
+  }
+  const r = await fetch(`https://ntfy.sh/${topic}`, { method: "POST", body });
+  if (r.status === 429) throw new Error("MQTT недоступний, а запасний ntfy вичерпав денний ліміт");
+  if (!r.ok) throw new Error(`запасний канал ntfy: ${r.status}`);
   return id;
 }
 
@@ -51,20 +56,20 @@ export async function send(cmd, onAnswer) {
   waiting[id] = onAnswer || null;
   try {
     await post(cmd, id);
-  } catch {
+  } catch (e) {
     delete waiting[id];
-    return onError({ text: "Немає зв'язку з ботом" });
+    return onError({ text: `Немає зв'язку з ботом: ${e.message}` });
   }
   setTimeout(() => {
     if (!(id in waiting)) return;
     delete waiting[id];
-    onError({ text: "Бот не відповідає — можливо, ноут спить або без інтернету" });
+    onError({ text: `Бот не відповідає (${viaMqtt() ? "MQTT" : "ntfy"}) — можливо, ноут спить або без інтернету` });
   }, ANSWER_MS);
 }
 
 // data request: the answer comes to the on(kind) listener, not to send() callbacks
 export async function request(cmd) {
-  if (connected) await post(cmd).catch(() => onError({ text: "Немає зв'язку з ботом" }));
+  if (connected) await post(cmd).catch(e => onError({ text: `Немає зв'язку з ботом: ${e.message}` }));
 }
 
 // last known data of a kind: from the broker memory, or from the ntfy cache
