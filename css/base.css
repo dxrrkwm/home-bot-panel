@@ -129,3 +129,9 @@ input[type=range].ct::-moz-range-thumb { width: 20px; height: 20px; border-radiu
 .item .muted { white-space: normal; margin-top: 4px; }
 .arrow { color: var(--hint); }
 svg text { fill: var(--hint); font-size: 9px; }
+
+.rem { cursor: pointer; }
+.edit { display: grid; gap: 10px; margin-top: 10px; cursor: default; }
+input[type=datetime-local] { padding: 12px; border-radius: var(--r-ctl); border: 0; background: var(--btn);
+                             color: var(--text); font: inherit; color-scheme: dark; }
+button.danger { color: var(--bad); }

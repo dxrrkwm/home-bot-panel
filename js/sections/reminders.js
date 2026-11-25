@@ -2,6 +2,7 @@ import { send } from "../bus.js";
 import { icon } from "../icons.js";
 import { $, $$, head, toast } from "../ui.js";
 import { ask } from "./answer.js";
+import { openList } from "./remlist.js";
 
 const SOON = ["15 хв", "30 хв", "1 год", "2 год"];
 // repeat until "done" in the chat; minutes, 0 = once, "" = own value
@@ -30,7 +31,7 @@ export function mount(home) {
     </div>
     <div class="line gap"><button class="main" id="remind">Нагадати</button></div>
     <div class="chips gap">
-      <button data-ask="📋 Список" data-title="Мої нагадування">${icon("list", 16)} Мої нагадування</button>
+      <button id="remList">${icon("list", 16)} Мої нагадування</button>
       <button data-ask="💊 Таблетки" data-title="Таблетки">${icon("pill", 16)} Таблетки</button>
     </div></div>`);
 
@@ -78,5 +79,6 @@ export function mount(home) {
     send(`нагадай ${at} ${what}${rep}`, d => toast(d.text.split("\n")[0]));
     $("#what").value = "";
   };
+  $("#remList").onclick = openList;
   $$("[data-ask]", root).forEach(b => b.onclick = () => ask(b.dataset.ask, b.dataset.title));
 }
