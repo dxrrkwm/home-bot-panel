@@ -42,4 +42,6 @@ Data comes from the bot on request `station-panel` (`station-panel:force` skips 
 A new feature is a new file in `js/sections/` with `mount(home)`, plus one line in `SECTIONS` in `main.js`.
 Sections with their own screen create it with `screen(id, title, { refresh })` and open it with `open(id)`.
 
-GitHub Pages caches files for 10 minutes, so changes can show up with a delay.
+GitHub Pages and the Telegram webview cache files for 10 minutes. `index.html` adds `?v=<panel_version>`
+(from the button url) to every css and js file through an import map, so after a change: bump `panel_version`
+in the bot config and send the new keyboard. A new css or js file must be added to the lists in `index.html`.

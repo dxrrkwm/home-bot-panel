@@ -4,11 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Панель</title>
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/finance.css">
-<link rel="stylesheet" href="css/power.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script type="module" src="js/main.js"></script>
+<script>
+// github pages and the telegram webview cache files for 10 min, so every file gets ?v=<panel_version>
+// from the button url: a new version means new urls. Keep these lists in sync with the files.
+const CSS = ["base", "finance", "power"];
+const JS = ["main", "tg", "bus", "seal", "ui", "icons",
+            "sections/answer", "sections/finance", "sections/lamp", "sections/power", "sections/reminders"];
+const v = new URLSearchParams(location.search).get("v") || Date.now();
+const url = path => new URL(`${path}?v=${v}`, location.href).href;
+for (const name of CSS) document.write(`<link rel="stylesheet" href="${url(`css/${name}.css`)}">`);
+const imports = Object.fromEntries(JS.map(name => [new URL(`js/${name}.js`, location.href).href, url(`js/${name}.js`)]));
+document.write(`<script type="importmap">${JSON.stringify({ imports })}<\/script>`);
+document.write(`<script type="module" src="${url("js/main.js")}"><\/script>`);
+</script>
 </head>
 <body>
 <section class="screen" id="home"></section>
