@@ -25,6 +25,7 @@ index.html            shell, loads css and js/main.js
 css/base.css          design tokens and shared components: cards, card head, switch, segmented, chips, bars
 css/finance.css       finance screens
 css/power.css         power screen
+css/prices.css        snack prices screen
 js/main.js            entry point, list of home cards
 js/icons.js           the icon set
 js/tg.js              telegram webapp helpers
@@ -38,6 +39,8 @@ js/sections/*.js      one file per feature: power, lamp, finance, reminders, ans
 battery for 24 hours, outages for 7 days (what happened vs the schedule) and the upcoming schedule.
 Data comes from the bot on request `station-panel` (`station-panel:force` skips the cache).
 `sections/finance.js`: `fin-panel`, `fin-panel:force` also pulls a new monobank statement.
+`sections/prices.js`: energy drinks 0.5 and bars at Silpo and Novus, cheapest first; `prices-panel`,
+`prices-panel:force` checks the shops again.
 
 A new feature is a new file in `js/sections/` with `mount(home)`, plus one line in `SECTIONS` in `main.js`.
 Sections with their own screen create it with `screen(id, title, { refresh })` and open it with `open(id)`.

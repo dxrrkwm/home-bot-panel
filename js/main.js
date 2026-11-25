@@ -4,10 +4,11 @@ import { $, toast } from "./ui.js";
 import * as finance from "./sections/finance.js";
 import * as lamp from "./sections/lamp.js";
 import * as power from "./sections/power.js";
+import * as prices from "./sections/prices.js";
 import * as reminders from "./sections/reminders.js";
 
 // home screen cards, top to bottom: a glance and a tap into the screen, lamp is controlled right here
-const SECTIONS = [power, lamp, finance, reminders];
+const SECTIONS = [power, lamp, finance, prices, reminders];
 
 tg.ready();
 tg.expand();

@@ -1,0 +1,11 @@
+.deals { color: var(--good); font-size: 13px; margin-right: 4px; }
+.good-item { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--btn); cursor: pointer; }
+.good-item:active { opacity: .7; }
+.good-item img, .good-item .noimg { width: 48px; height: 48px; border-radius: 10px; object-fit: contain;
+                                    background: #fff; flex: none; }
+.good-item .name { font-size: 14px; }
+.good-item .muted { margin-top: 2px; }
+.good-item .price { text-align: right; flex: none; display: grid; gap: 2px; font-size: 13px; }
+.good-item .price b { font-size: 16px; }
+.good-item .deal { color: var(--good); }
+.cut { color: var(--good); }
