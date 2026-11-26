@@ -125,12 +125,21 @@ function operations(d) {
      <b class="${a > 0 ? "plus" : ""}">${a > 0 ? "+" : ""}${money(a)}</b></div>`).join("")}</div>`;
 }
 
+// salary from the shift schedule: hours of the month at the rates, extra hours and KPI on top
+function salary(d) {
+  if (!d.salary?.length) return "";
+  const rows = d.salary.map(s => `<div class="gap"><div class="line"><span>${esc(s.month)}</span>
+      <span class="push big plus">${money(s.total)}</span></div>
+    <div class="muted">${s.hours} год${s.extra_hours ? `, з них доп. ${s.extra_hours}` : ""} · основні ${money(s.base)}${s.extra ? ` + доп ${money(s.extra)}` : ""} + KPI ${money(s.kpi)} · прийде ~${s.paid}</div></div>`).join("");
+  return `<div class="card"><div class="line"><span>Зарплата за графіком</span><span class="muted push">орієнтовно</span></div>${rows}</div>`;
+}
+
 function render(d) {
   busy(fin, Boolean(d.syncing));
   $("[data-note]", fin).textContent = d.syncing ? "оновлюю виписку…" : "оновлено " + d.upd;
   const body = $("[data-body]", fin);
   body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}
     <div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>
-    ${month(d)}${goods(d.goods || [])}${tips(d.tips || [])}${jars(d)}${operations(d)}`;
+    ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${jars(d)}${operations(d)}`;
   $$("[data-detail]", body).forEach(el => el.onclick = () => openDetail(el.dataset.detail, el.dataset.name));
 }

@@ -2,6 +2,7 @@
 .band-state .muted { margin-top: 2px; }
 
 .tl i.work { background: rgba(243, 213, 155, .28); border-radius: 0; }
+.tl i.work.extra { background: rgba(243, 213, 155, .5); }
 .dot.work { background: rgba(243, 213, 155, .6); }
 .tl-row .today { color: var(--text); font-weight: 600; }
 
@@ -15,3 +16,4 @@
 .cal-day.day small { color: var(--amber); }
 .cal-day.night { background: rgba(159, 208, 242, .2); }
 .cal-day.night small { color: var(--blue); }
+.cal-day.extra small { color: var(--amber); }

@@ -67,7 +67,7 @@ function week(d) {
   const rows = [];
   for (let i = -6; i <= 7; i++) {
     const day = addDays(d.today, i);
-    const work = (d.work[day] || []).map(([a, b]) => `<i class="work" style="left:${100 * a / 1440}%;width:${100 * (b - a) / 1440}%"></i>`);
+    const work = (d.work[day] || []).map(([a, b, extra]) => `<i class="work${extra ? " extra" : ""}" style="left:${100 * a / 1440}%;width:${100 * (b - a) / 1440}%"></i>`);
     const slept = (sleepTl[day] || []).map(([a, b, main]) =>
       `<i class="${main ? "main" : "nap"}" style="left:${100 * a / 1440}%;width:${Math.max(0.6, 100 * (b - a) / 1440)}%"></i>`);
     const cls = day === d.today ? "muted today" : "muted";
@@ -87,16 +87,18 @@ function calendar(d) {
   const cells = Array.from({ length: lead }, () => "<span></span>");
   for (let n = 1; n <= days; n++) {
     const day = iso(new Date(first.getFullYear(), first.getMonth(), n));
-    const kind = d.shifts[day];
-    const mark = kind === "day" ? "Д" : kind === "night" ? "Н" : "";
-    cells.push(`<button class="cal-day ${kind || ""} ${day === d.today ? "today" : ""}" data-day="${day}">${n}<small>${mark}</small></button>`);
+    // the mark is the start hour (of the main shift, else of the extra hours), "+" when there are extra hours
+    const s = d.shifts[day] || {};
+    const mark = (s.from ?? "") + (s.extra ? "+" : "");
+    cells.push(`<button class="cal-day ${s.p || (s.extra ? "extra" : "")} ${day === d.today ? "today" : ""}" data-day="${day}">${n}<small>${mark}</small></button>`);
   }
   const week = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map(w => `<span class="muted">${w}</span>`).join("");
   return `<div class="card"><div class="line"><button class="icon-btn" data-month="-1">${icon("back", 18)}</button>
       <span class="grow center">${MONTHS[first.getMonth()]} ${first.getFullYear()}</span>
       <button class="icon-btn" data-month="1">${icon("chevron", 18)}</button></div>
     <div class="cal">${week}${cells.join("")}</div>
-    <div class="muted gap">Тап по дню: денна (09–21) → нічна (21–09) → вихідний.</div></div>`;
+    <div class="muted gap">Число — початок зміни, «+» — додаткові години. Тап: денна 9–21 → нічна 21–9 → вихідний.
+      Графік на місяць — CSV з таблиці infocus у чат бота.</div></div>`;
 }
 
 function lastSleep(d) {
@@ -119,8 +121,9 @@ function render(d) {
   };
   $$("[data-day]", body).forEach(b => b.onclick = () => {
     const day = b.dataset.day;
-    const kind = NEXT[d.shifts[day]];
-    if (kind) d.shifts[day] = kind; else delete d.shifts[day];
+    const s = d.shifts[day] || { extra: false };
+    const kind = NEXT[s.p];
+    d.shifts[day] = { ...s, p: kind, from: kind ? (kind === "day" ? "9" : "21") : undefined };
     render(d);  // at once, the bot confirms with fresh data
     request("shift:" + day);
   });
