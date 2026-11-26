@@ -7,9 +7,10 @@ import { hm, openSleep } from "./sleep.js";
 // a week of sleep laid over the work hours, and the shift calendar
 const scr = screen("band", "Браслет", { refresh: () => request("band-panel") });
 const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-const NEXT = { undefined: "day", day: "night", night: undefined };
+const PRESET = { day: "9–21", night: "20–8" };
 let data = null;
 let month = null;  // first day of the month shown in the calendar
+let selected = null;  // the date being edited
 
 async function openBand() {
   if (!connected) return toast("Відкрий панель з кнопки бота");
@@ -79,6 +80,15 @@ function week(d) {
     <div class="legend"><span><b class="dot ph-deep"></b>сон</span><span><b class="dot ph-rem"></b>дрімота</span><span><b class="dot work"></b>зміна</span></div></div>`;
 }
 
+// a month of shifts: green = work with its hours, moon = night shift, flame = extra hours
+function cell(day, n, s, today) {
+  const work = s.main || s.extra;
+  const icons = (s.p === "night" ? icon("moon", 11) : "") + (s.extra ? `<span class="flame">${icon("flame", 11)}</span>` : "");
+  const cls = ["cal-day", work && "work", day === today && "today", day === selected && "sel"].filter(Boolean).join(" ");
+  return `<button class="${cls}" data-day="${day}"><span class="n">${n}</span>
+    <span class="h">${esc(s.main || s.extra || "")}</span><span class="ic">${icons}</span></button>`;
+}
+
 function calendar(d) {
   const first = month || new Date(d.today.slice(0, 7) + "-01T12:00:00");
   month = first;
@@ -87,18 +97,26 @@ function calendar(d) {
   const cells = Array.from({ length: lead }, () => "<span></span>");
   for (let n = 1; n <= days; n++) {
     const day = iso(new Date(first.getFullYear(), first.getMonth(), n));
-    // the mark is the start hour (of the main shift, else of the extra hours), "+" when there are extra hours
-    const s = d.shifts[day] || {};
-    const mark = (s.from ?? "") + (s.extra ? "+" : "");
-    cells.push(`<button class="cal-day ${s.p || (s.extra ? "extra" : "")} ${day === d.today ? "today" : ""}" data-day="${day}">${n}<small>${mark}</small></button>`);
+    cells.push(cell(day, n, d.shifts[day] || {}, d.today));
   }
   const week = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map(w => `<span class="muted">${w}</span>`).join("");
   return `<div class="card"><div class="line"><button class="icon-btn" data-month="-1">${icon("back", 18)}</button>
       <span class="grow center">${MONTHS[first.getMonth()]} ${first.getFullYear()}</span>
       <button class="icon-btn" data-month="1">${icon("chevron", 18)}</button></div>
     <div class="cal">${week}${cells.join("")}</div>
-    <div class="muted gap">Число — початок зміни, «+» — додаткові години. Тап: денна 9–21 → нічна 21–9 → вихідний.
-      Графік на місяць — CSV з таблиці infocus у чат бота.</div></div>`;
+    <div class="legend cal-legend"><span><b class="dot work"></b>зміна</span><span>${icon("moon", 12)}нічна</span>
+      <span><i class="flame">${icon("flame", 12)}</i>допка</span></div>
+    ${selected ? editor(d) : `<div class="muted gap">Тапни день, щоб змінити. Графік на місяць — CSV з таблиці infocus у чат бота, допку — «допка 21.12 9-21».</div>`}</div>`;
+}
+
+// the selected day: what is there and the three choices for its main shift
+function editor(d) {
+  const s = d.shifts[selected] || {};
+  const [, m, n] = selected.split("-");
+  const what = [s.main && `зміна ${s.main}${s.p === "night" ? " (нічна)" : ""}`, s.extra && `допка ${s.extra}`].filter(Boolean).join(", ") || "вихідний";
+  const pick = (kind, label) => `<button data-set="${kind}" class="${(s.p || "off") === kind ? "on" : ""}">${label}</button>`;
+  return `<div class="cal-edit gap"><div class="line"><span>${n}.${m}</span><span class="muted push">${esc(what)}</span></div>
+    <div class="grid gap">${pick("day", "Денна 9–21")}${pick("night", "Нічна 20–8")}${pick("off", "Вихідний")}</div></div>`;
 }
 
 function lastSleep(d) {
@@ -120,12 +138,14 @@ function render(d) {
     send(cmd, answer => toast(answer.text.split("\n")[0]));
   };
   $$("[data-day]", body).forEach(b => b.onclick = () => {
-    const day = b.dataset.day;
-    const s = d.shifts[day] || { extra: false };
-    const kind = NEXT[s.p];
-    d.shifts[day] = { ...s, p: kind, from: kind ? (kind === "day" ? "9" : "21") : undefined };
+    selected = selected === b.dataset.day ? null : b.dataset.day;
+    render(d);
+  });
+  $$("[data-set]", body).forEach(b => b.onclick = () => {
+    const kind = b.dataset.set, s = d.shifts[selected] || {};
+    d.shifts[selected] = { ...s, p: kind === "off" ? null : kind, main: PRESET[kind] || null };
+    request(`shiftset:${selected}:${kind}`);
     render(d);  // at once, the bot confirms with fresh data
-    request("shift:" + day);
   });
   $$("[data-month]", body).forEach(b => b.onclick = () => {
     month = new Date(month.getFullYear(), month.getMonth() + Number(b.dataset.month), 1, 12);

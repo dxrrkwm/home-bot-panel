@@ -1,19 +1,26 @@
 .band-state { display: flex; align-items: center; gap: 12px; }
 .band-state .muted { margin-top: 2px; }
 
-.tl i.work { background: rgba(243, 213, 155, .28); border-radius: 0; }
-.tl i.work.extra { background: rgba(243, 213, 155, .5); }
-.dot.work { background: rgba(243, 213, 155, .6); }
+.tl i.work { background: rgba(121, 217, 138, .28); border-radius: 0; }
+.tl i.work.extra { background: rgba(245, 166, 91, .45); }
+.dot.work { background: rgba(121, 217, 138, .6); }
 .tl-row .today { color: var(--text); font-weight: 600; }
 
-/* shift calendar: day = amber, night = blue */
+/* shift calendar: green = work with its hours, moon = night, flame = extra hours */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; text-align: center; }
 .cal .muted { font-size: 11px; padding-bottom: 2px; }
-.cal-day { padding: 6px 0 4px; border-radius: 10px; font-size: 14px; display: grid; gap: 1px; }
-.cal-day small { font-size: 10px; min-height: 12px; color: var(--hint); }
+.cal-day { padding: 5px 0 4px; border-radius: 10px; display: grid; justify-items: center; gap: 1px; min-height: 52px;
+           background: transparent; color: var(--hint); }
+.cal-day .n { font-size: 13px; }
+.cal-day .h { font-size: 11px; font-weight: 600; letter-spacing: -.2px; min-height: 14px; }
+.cal-day .ic { display: flex; gap: 2px; min-height: 11px; color: var(--blue); }
+.cal-day.work { background: rgba(121, 217, 138, .16); color: var(--text); }
+.cal-day.work .h { color: var(--good); }
 .cal-day.today { outline: 1.5px solid var(--hint); }
-.cal-day.day { background: rgba(243, 213, 155, .22); }
-.cal-day.day small { color: var(--amber); }
-.cal-day.night { background: rgba(159, 208, 242, .2); }
-.cal-day.night small { color: var(--blue); }
-.cal-day.extra small { color: var(--amber); }
+.cal-day.sel { outline: 2px solid var(--good); }
+.flame { color: #f5a65b; display: inline-flex; font-style: normal; }
+.cal-legend { justify-content: center; }
+.cal-legend .icon { display: inline-block; vertical-align: -2px; margin-right: 3px; color: var(--blue); }
+.cal-legend .flame .icon { color: #f5a65b; }
+.cal-edit { border-top: 1px solid var(--btn); padding-top: 10px; }
+.cal-edit button.on { background: rgba(121, 217, 138, .25); color: var(--good); font-weight: 600; }
