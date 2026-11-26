@@ -1,0 +1,17 @@
+.band-state { display: flex; align-items: center; gap: 12px; }
+.band-state .muted { margin-top: 2px; }
+
+.tl i.work { background: rgba(243, 213, 155, .28); border-radius: 0; }
+.dot.work { background: rgba(243, 213, 155, .6); }
+.tl-row .today { color: var(--text); font-weight: 600; }
+
+/* shift calendar: day = amber, night = blue */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; text-align: center; }
+.cal .muted { font-size: 11px; padding-bottom: 2px; }
+.cal-day { padding: 6px 0 4px; border-radius: 10px; font-size: 14px; display: grid; gap: 1px; }
+.cal-day small { font-size: 10px; min-height: 12px; color: var(--hint); }
+.cal-day.today { outline: 1.5px solid var(--hint); }
+.cal-day.day { background: rgba(243, 213, 155, .22); }
+.cal-day.day small { color: var(--amber); }
+.cal-day.night { background: rgba(159, 208, 242, .2); }
+.cal-day.night small { color: var(--blue); }
