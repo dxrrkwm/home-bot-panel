@@ -110,14 +110,14 @@ function stepsCard(a) {
     <div class="grid gap band-stats">${stat("в середньому", a.avg7 ? num(a.avg7) : "—")}${stat("рекорд", a.best ? num(a.best.steps) : "—")}${stat("днів підряд", a.streak)}</div></div>`;
 }
 
+// only while the sleep mode is on: falling asleep cannot be seen live (the band syncs its sleep
+// after waking up), so "сплю" comes from the band or the chat, and waking up also ends the mode by itself
 function stateCard(d) {
-  const asleep = Boolean(d.sleeping);
-  const text = asleep ? `Спиш з ${d.sleeping} · ${hm(d.slept)}` : "Не спиш";
-  const note = asleep ? "Бот пише без звуку, нагадування й таблетки чекають до «встав»."
-                      : "«Сплю» вимикає лампу, переводить ноут в Еко і глушить бота до ранку.";
-  return `<div class="card"><div class="band-state"><span class="ico ${asleep ? "blue" : "amber"}">${icon(asleep ? "moon" : "sun")}</span>
-      <div class="grow"><div class="h-title">${text}</div><div class="muted">${note}</div></div></div>
-    <button class="main gap" data-mode="${asleep ? "band:wake" : "band:sleep"}">${asleep ? "Встав" : "Сплю"}</button></div>`;
+  if (!d.sleeping) return "";
+  return `<div class="card"><div class="band-state"><span class="ico blue">${icon("moon")}</span>
+      <div class="grow"><div class="h-title">Спиш з ${d.sleeping} · ${hm(d.slept)}</div>
+      <div class="muted">Бот пише без звуку, нагадування й таблетки чекають до «встав».</div></div></div>
+    <button class="main gap" data-mode="band:wake">Встав</button></div>`;
 }
 
 function shiftCard(d) {
@@ -209,8 +209,9 @@ function render(d) {
   $("[data-note]", scr).textContent = d.sleep ? `Mi Fitness · ${d.sleep.upd}` : "";
   const body = $("[data-body]", scr);
   body.innerHTML = activityCard(d.activity) + stateCard(d) + stepsCard(d.activity) + shiftCard(d) + week(d) + calendar(d) + lastSleep(d)
-    + `<div class="muted center">На браслеті: Mi Fitness → Сповіщення → Telegram → Швидкі відповіді, додай «сплю» і «встав».</div>`;
-  $("[data-mode]", body).onclick = e => {
+    + `<div class="muted center">На браслеті: Mi Fitness → Сповіщення → Telegram → Швидкі відповіді, додай «сплю» і «встав». Лягаєш — відповідай «сплю» на будь-яке повідомлення бота: лампа гасне, ноут в Еко, бот мовчить до ранку.</div>`;
+  const mode = $("[data-mode]", body);
+  if (mode) mode.onclick = e => {
     const cmd = e.currentTarget.dataset.mode;
     e.currentTarget.disabled = true;
     send(cmd, answer => toast(answer.text.split("\n")[0]));
