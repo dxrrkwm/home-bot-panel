@@ -47,9 +47,9 @@ function dates(since) {
 function phases(s) {
   const total = PHASES.reduce((n, [k]) => n + (s[k] || 0), 0);
   if (!total) return "";
-  const bar = PHASES.map(([k]) => s[k] ? `<i class="${k}" style="width:${100 * s[k] / total}%"></i>` : "").join("");
+  const bar = PHASES.map(([k]) => s[k] ? `<i class="ph-${k}" style="width:${100 * s[k] / total}%"></i>` : "").join("");
   const legend = PHASES.filter(([k]) => s[k]).map(([k, name]) =>
-    `<span><b class="dot ${k}"></b>${name} ${hm(s[k])}</span>`).join("");
+    `<span><b class="dot ph-${k}"></b>${name} ${hm(s[k])}</span>`).join("");
   return `<div class="phases">${bar}</div><div class="legend">${legend}</div>`;
 }
 
@@ -73,7 +73,7 @@ function chart(days, all) {
     const rects = d ? PHASES.map(([k]) => {
       const hgt = (d[k] || 0) / max * (h - 24);
       top -= hgt;
-      return hgt ? `<rect x="${i * bw + 3}" y="${top}" width="${bw - 6}" height="${hgt}" class="${k}"/>` : "";
+      return hgt ? `<rect x="${i * bw + 3}" y="${top}" width="${bw - 6}" height="${hgt}" class="ph-${k}"/>` : "";
     }).join("") : "";
     const label = i % 2 === all.length % 2 ? `<text x="${i * bw + bw / 2}" y="${h - 2}" text-anchor="middle">${day.slice(8)}</text>` : "";
     return rects + label;

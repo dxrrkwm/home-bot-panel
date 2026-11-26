@@ -9,10 +9,10 @@
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12px; color: var(--hint); }
 .legend span { display: flex; align-items: center; gap: 5px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.deep { background: #6fb6ea; fill: #6fb6ea; }
-.light { background: #bfe1f7; fill: #bfe1f7; }
-.rem { background: var(--pink); fill: var(--pink); }
-.awake { background: var(--amber); fill: var(--amber); }
+.ph-deep { background: #6fb6ea; fill: #6fb6ea; }
+.ph-light { background: #bfe1f7; fill: #bfe1f7; }
+.ph-rem { background: var(--pink); fill: var(--pink); }
+.ph-awake { background: var(--amber); fill: var(--amber); }
 
 .sleep-chart { margin-top: 10px; }
 .sleep-chart text { fill: var(--hint); font-size: 10px; }
