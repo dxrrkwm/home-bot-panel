@@ -2,25 +2,31 @@
 .band-state .muted { margin-top: 2px; }
 
 .tl i.work { background: rgba(121, 217, 138, .28); border-radius: 0; }
-.tl i.work.extra { background: rgba(245, 166, 91, .45); }
+.tl i.work.extra { background: rgba(121, 217, 138, .6); }  /* sleep is blue here, so extra hours stay green, brighter */
 .dot.work { background: rgba(121, 217, 138, .6); }
 .tl-row .today { color: var(--text); font-weight: 600; }
 
-/* shift calendar: green = work with its hours, moon = night, flame = extra hours */
+/* shift calendar: green = main shift with its hours, blue = extra hours, moon = night */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; text-align: center; }
 .cal .muted { font-size: 11px; padding-bottom: 2px; }
-.cal-day { padding: 5px 0 4px; border-radius: 10px; display: grid; justify-items: center; gap: 1px; min-height: 52px;
+.cal-day { padding: 5px 0 4px; border-radius: 10px; display: grid; justify-items: center; gap: 1px; min-height: 54px;
            background: transparent; color: var(--hint); }
 .cal-day .n { font-size: 13px; }
 .cal-day .h { font-size: 11px; font-weight: 600; letter-spacing: -.2px; min-height: 14px; }
-.cal-day .ic { display: flex; gap: 2px; min-height: 11px; color: var(--blue); }
+.cal-day .ic { display: flex; align-items: center; gap: 3px; min-height: 12px; color: var(--hint); font-size: 10px; }
 .cal-day.work { background: rgba(121, 217, 138, .16); color: var(--text); }
 .cal-day.work .h { color: var(--good); }
+.cal-day.extra { background: rgba(159, 208, 242, .14); color: var(--text); }
+.x { color: var(--blue); font-weight: 600; }
+.cal-day .h.x { color: var(--blue); }
 .cal-day.today { outline: 1.5px solid var(--hint); }
 .cal-day.sel { outline: 2px solid var(--good); }
-.flame { color: #f5a65b; display: inline-flex; font-style: normal; }
 .cal-legend { justify-content: center; }
-.cal-legend .icon { display: inline-block; vertical-align: -2px; margin-right: 3px; color: var(--blue); }
-.cal-legend .flame .icon { color: #f5a65b; }
+.cal-legend .icon { display: inline-block; vertical-align: -2px; margin-right: 3px; }
+.cal-legend .x { margin-right: 3px; font-size: 11px; }
 .cal-edit { border-top: 1px solid var(--btn); padding-top: 10px; }
-.cal-edit button.on { background: rgba(121, 217, 138, .25); color: var(--good); font-weight: 600; }
+.cal-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { padding: 7px 10px; font-size: 13px; border-radius: 999px; }
+.cal-edit .chip.on { background: rgba(121, 217, 138, .25); color: var(--good); font-weight: 600; }
+.chip.x { background: rgba(159, 208, 242, .16); }
+.own select { background: var(--btn); color: var(--text); border: 0; border-radius: 8px; padding: 6px; font: inherit; }

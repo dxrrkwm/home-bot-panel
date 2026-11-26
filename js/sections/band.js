@@ -7,7 +7,6 @@ import { hm, openSleep } from "./sleep.js";
 // a week of sleep laid over the work hours, and the shift calendar
 const scr = screen("band", "Браслет", { refresh: () => request("band-panel") });
 const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-const PRESET = { day: "9–21", night: "20–8" };
 let data = null;
 let month = null;  // first day of the month shown in the calendar
 let selected = null;  // the date being edited
@@ -80,13 +79,14 @@ function week(d) {
     <div class="legend"><span><b class="dot ph-deep"></b>сон</span><span><b class="dot ph-rem"></b>дрімота</span><span><b class="dot work"></b>зміна</span></div></div>`;
 }
 
-// a month of shifts: green = work with its hours, moon = night shift, flame = extra hours
+// a month of shifts: green = the main shift with its hours, blue = extra hours, moon = night shift
 function cell(day, n, s, today) {
-  const work = s.main || s.extra;
-  const icons = (s.p === "night" ? icon("moon", 11) : "") + (s.extra ? `<span class="flame">${icon("flame", 11)}</span>` : "");
-  const cls = ["cal-day", work && "work", day === today && "today", day === selected && "sel"].filter(Boolean).join(" ");
-  return `<button class="${cls}" data-day="${day}"><span class="n">${n}</span>
-    <span class="h">${esc(s.main || s.extra || "")}</span><span class="ic">${icons}</span></button>`;
+  const extra = s.extras?.length;
+  const hours = s.main ? `<span class="h">${esc(s.main)}</span>` : extra ? `<span class="h x">${esc(s.extras[0])}</span>` : `<span class="h"></span>`;
+  const plus = s.main && extra ? `<span class="x">+${s.extra_h}</span>` : "";
+  const cls = ["cal-day", s.main ? "work" : extra ? "extra" : "", day === today && "today", day === selected && "sel"].filter(Boolean).join(" ");
+  return `<button class="${cls}" data-day="${day}"><span class="n">${n}</span>${hours}
+    <span class="ic">${s.night ? icon("moon", 11) : ""}${plus}</span></button>`;
 }
 
 function calendar(d) {
@@ -105,18 +105,30 @@ function calendar(d) {
       <button class="icon-btn" data-month="1">${icon("chevron", 18)}</button></div>
     <div class="cal">${week}${cells.join("")}</div>
     <div class="legend cal-legend"><span><b class="dot work"></b>зміна</span><span>${icon("moon", 12)}нічна</span>
-      <span><i class="flame">${icon("flame", 12)}</i>допка</span></div>
+      <span><b class="x">+1</b>допка, год</span></div>
     ${selected ? editor(d) : `<div class="muted gap">Тапни день, щоб змінити. Графік на місяць — CSV з таблиці infocus у чат бота, допку — «допка 21.12 9-21».</div>`}</div>`;
 }
 
-// the selected day: what is there and the three choices for its main shift
+// the selected day: the main shift from the usual ones or own hours, extra hours added or removed
+const HOURS = Array.from({ length: 24 }, (_, h) => `<option value="${h}">${h}:00</option>`).join("");
+let adding = null;  // "main" or "extra" while the own hours row is open
+
 function editor(d) {
-  const s = d.shifts[selected] || {};
+  const s = d.shifts[selected] || { extras: [] };
   const [, m, n] = selected.split("-");
-  const what = [s.main && `зміна ${s.main}${s.p === "night" ? " (нічна)" : ""}`, s.extra && `допка ${s.extra}`].filter(Boolean).join(", ") || "вихідний";
-  const pick = (kind, label) => `<button data-set="${kind}" class="${(s.p || "off") === kind ? "on" : ""}">${label}</button>`;
-  return `<div class="cal-edit gap"><div class="line"><span>${n}.${m}</span><span class="muted push">${esc(what)}</span></div>
-    <div class="grid gap">${pick("day", "Денна 9–21")}${pick("night", "Нічна 20–8")}${pick("off", "Вихідний")}</div></div>`;
+  const chip = (hours, on) => `<button class="chip ${on ? "on" : ""}" data-main="${hours}">${hours}</button>`;
+  const usual = d.common.map(h => chip(h, s.main === h)).join("")
+    + (s.main && !d.common.includes(s.main) ? chip(s.main, true) : "")
+    + `<button class="chip ${s.main ? "" : "on"}" data-main="off">вихідний</button>`
+    + `<button class="chip" data-own="main">свої…</button>`;
+  const extras = (s.extras || []).map(h => `<button class="chip x" data-del="${h}">+${h} ✕</button>`).join("")
+    + `<button class="chip" data-own="extra">+ допка</button>`;
+  const own = adding ? `<div class="line gap own"><span class="muted">${adding === "main" ? "Зміна" : "Допка"} з</span>
+      <select id="ownFrom">${HOURS}</select><span class="muted">до</span><select id="ownTo">${HOURS}</select>
+      <button class="chip on" id="ownOk">OK</button></div>` : "";
+  return `<div class="cal-edit gap"><div class="line"><b>${n}.${m}</b><span class="muted push">тап по дню ще раз — закрити</span></div>
+    <div class="muted gap">Зміна</div><div class="cal-chips">${usual}</div>
+    <div class="muted gap">Допки</div><div class="cal-chips">${extras}</div>${own}</div>`;
 }
 
 function lastSleep(d) {
@@ -139,14 +151,44 @@ function render(d) {
   };
   $$("[data-day]", body).forEach(b => b.onclick = () => {
     selected = selected === b.dataset.day ? null : b.dataset.day;
+    adding = null;
     render(d);
   });
-  $$("[data-set]", body).forEach(b => b.onclick = () => {
-    const kind = b.dataset.set, s = d.shifts[selected] || {};
-    d.shifts[selected] = { ...s, p: kind === "off" ? null : kind, main: PRESET[kind] || null };
-    request(`shiftset:${selected}:${kind}`);
+  const span = h => h.replace("–", "-");
+  const hoursOf = (a, b) => `${Number(a)}–${Number(b)}`;
+  const extraHours = list => list.reduce((n, h) => { const [a, b] = h.split("–").map(Number); return n + ((b - a + 24) % 24 || 24); }, 0);
+  const update = (patch, cmd) => {
+    const s = d.shifts[selected] || { extras: [] };
+    d.shifts[selected] = { ...s, ...patch };
+    d.shifts[selected].extra_h = extraHours(d.shifts[selected].extras || []);
+    adding = null;
+    request(cmd);
     render(d);  // at once, the bot confirms with fresh data
+  };
+  $$("[data-main]", body).forEach(b => b.onclick = () => {
+    const h = b.dataset.main;
+    update({ main: h === "off" ? null : h, night: h !== "off" && Number(h.split("–")[1]) < Number(h.split("–")[0]) },
+      `shiftset:${selected}:${h === "off" ? "off" : span(h)}`);
   });
+  $$("[data-del]", body).forEach(b => b.onclick = () => {
+    const h = b.dataset.del, s = d.shifts[selected];
+    update({ extras: s.extras.filter(x => x !== h) }, `extradel:${selected}:${span(h)}`);
+  });
+  $$("[data-own]", body).forEach(b => b.onclick = () => { adding = b.dataset.own; render(d); });
+  $("#ownOk", body)?.addEventListener("click", () => {
+    const h = hoursOf($("#ownFrom", body).value, $("#ownTo", body).value), s = d.shifts[selected] || { extras: [] };
+    if (adding === "main") {
+      update({ main: h, night: Number($("#ownTo", body).value) < Number($("#ownFrom", body).value) }, `shiftset:${selected}:${span(h)}`);
+    } else {
+      update({ extras: [...(s.extras || []), h] }, `extraadd:${selected}:${span(h)}`);
+    }
+  });
+  if (adding) {
+    // extra hours usually follow the shift (stayed late), own hours start as a usual day shift
+    const end = Number((d.shifts[selected]?.main || "9–21").split("–")[1]);
+    $("#ownFrom", body).value = adding === "main" ? 9 : end;
+    $("#ownTo", body).value = adding === "main" ? 21 : (end + 1) % 24;
+  }
   $$("[data-month]", body).forEach(b => b.onclick = () => {
     month = new Date(month.getFullYear(), month.getMonth() + Number(b.dataset.month), 1, 12);
     render(d);
