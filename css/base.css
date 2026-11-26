@@ -96,6 +96,7 @@ input[type=range].ct::-webkit-slider-thumb { -webkit-appearance: none; width: 20
                                              background: var(--text); border: 2px solid var(--card); }
 input[type=range].ct::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--text); }
 .dots { flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+.dots-inline { display: contents; }  /* the color dots sit in the same row as the picker */
 
 .dots { display: flex; justify-content: space-between; }
 .dot { width: 36px; height: 36px; border-radius: 50%; padding: 0; flex: none; box-shadow: 0 0 0 2px var(--card), 0 0 0 3px transparent; }

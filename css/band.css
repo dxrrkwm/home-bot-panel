@@ -30,3 +30,23 @@
 .cal-edit .chip.on { background: rgba(121, 217, 138, .25); color: var(--good); font-weight: 600; }
 .chip.x { background: rgba(159, 208, 242, .16); }
 .own select { background: var(--btn); color: var(--text); border: 0; border-radius: 8px; padding: 6px; font: inherit; }
+
+/* steps and sleep rings */
+.rings .track { fill: none; stroke: var(--btn); stroke-width: 10; }
+.rings .fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dasharray .6s; }
+.rings .fill.steps { stroke: var(--good); }
+.rings .fill.sleep { stroke: var(--blue); }
+svg.rings text.c { fill: var(--text); font-size: 17px; font-weight: 600; }
+.head-row svg.rings text.c { font-size: 26px; }
+svg.rings text.u { fill: var(--hint); font-size: 9px; }
+.act { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 4px 0 8px; }
+.act-side { display: grid; justify-items: center; gap: 2px; }
+.act-side b { font-size: 20px; }
+.act-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.act-chips .chip { padding: 5px 10px; border-radius: 999px; background: var(--btn); font-size: 12px; }
+.act-chips .chip.sl { color: var(--blue); }
+.steps-chart { margin-top: 10px; }
+.steps-chart text { fill: var(--hint); font-size: 10px; }
+.steps-chart .hit { fill: var(--good); }
+.steps-chart .miss { fill: rgba(121, 217, 138, .35); }
+.band-stats .big { font-size: 20px; }

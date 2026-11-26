@@ -6,7 +6,6 @@ const PRESETS = [["🌙 Нічник", "Нічник"], ["🕯 Тепле", "Т�
 const COLORS = ["#F7C4D4", "#9FD0F2", "#FF8C69", "#C3A6EF", "#A8E0B0"];
 const MY_COLORS = "lampColors";  // colors picked by hand, kept on this device
 const MY_MAX = 4;
-const PICK_MS = 500;  // the picker fires on every move, apply when it stops
 
 let color = null;
 let lampOn = false;
@@ -25,22 +24,21 @@ function describe(s) {
   return `${s.bright}% · ${s.rgb || s.ct + " K"}`;
 }
 
+// the picker is drawn once and never redrawn: redrawing it while it is open broke the choice,
+// and the color goes to the lamp only when the picker is closed with the final color, not on every tap
 function drawDots() {
   const dots = [...COLORS, ...mine()];
-  $("#lampDots").innerHTML = dots.map(c => `<button class="dot" style="background:${c}" data-color="${c}"></button>`).join("") +
-    `<button class="dot picker" id="pickerDot"><input type="color" id="color" value="#ff8c69"></button>`;
+  $("#lampColorDots").innerHTML = dots.map(c => `<button class="dot" style="background:${c}" data-color="${c}"></button>`).join("");
   $$("[data-color]", $("#lampDots")).forEach(b => b.onclick = () => pick(b.dataset.color));
-  const input = $("#color");
-  let timer;
-  input.oninput = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => pick(input.value.toUpperCase(), true), PICK_MS);
-  };
-  input.onchange = () => {
-    clearTimeout(timer);
-    pick(input.value.toUpperCase(), true);
-  };
   markDot();
+}
+
+function drawPicker() {
+  $("#lampDots").innerHTML = `<span id="lampColorDots" class="dots-inline"></span>
+    <button class="dot picker" id="pickerDot"><input type="color" id="color" value="#ff8c69"></button>`;
+  const input = $("#color");
+  input.onchange = () => pick(input.value.toUpperCase(), true);
+  drawDots();
 }
 
 function markDot() {
@@ -84,7 +82,7 @@ export function mount(home) {
   const root = $("#lamp");
   const bright = $("#bright");
   const ct = $("#ct");
-  drawDots();
+  drawPicker();
 
   $("#lampSwitch").onclick = () => {
     lampOn = !lampOn;

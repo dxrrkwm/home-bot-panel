@@ -18,15 +18,42 @@ async function openBand() {
   request("band-panel");
 }
 
+// the card asks for fresh steps when the panel opens
+ready.then(() => request("band-panel"));
+
 on("band", d => {
   data = d;
   renderCard(d);
   if (isOpen("band")) render(d);
 });
 
+const num = n => Math.round(n).toLocaleString("uk-UA").replace(/,/g, " ");
+const short = n => n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(".", ",")}k` : `${n}`;
+
+// two rings like on a sports watch: outer green = steps to the goal, inner blue = the last sleep to 8 h
+function rings(a, size, center = "", sub = "") {
+  const ring = (r, part, cls) => {
+    const c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, part || 0));
+    return `<circle cx="60" cy="60" r="${r}" class="track"/>
+      <circle cx="60" cy="60" r="${r}" class="fill ${cls}" stroke-dasharray="${c * v} ${c}" transform="rotate(-90 60 60)"/>`;
+  };
+  const big = size > 80;
+  return `<svg class="rings" viewBox="0 0 120 120" width="${size}" height="${size}">
+    ${ring(52, a ? a.steps / a.goal : 0, "steps")}${ring(38, a?.slept ? a.slept / 480 : 0, "sleep")}
+    <text x="60" y="${big ? 62 : 70}" text-anchor="middle" class="c">${center}</text>
+    ${big && sub ? `<text x="60" y="80" text-anchor="middle" class="u">${sub}</text>` : ""}</svg>`;
+}
+
 function renderCard(d) {
-  const sub = d.sleeping ? `спиш з ${d.sleeping}` : d.next ? `зміна ${d.next}` : "сон, зміни, режим сну";
-  $("[data-sub]", $("#bandCard")).textContent = sub;
+  const a = d.activity;
+  const parts = d.sleeping ? [`спиш з ${d.sleeping}`] : [
+    a && `${num(a.steps)} кроків`,
+    a?.pulse && `♥ ${a.pulse.bpm}`,
+    a?.slept && `сон ${hm(a.slept)}`,
+  ].filter(Boolean);
+  $("#bandCard").innerHTML = `<div class="head-row">${rings(a, 44, a ? short(a.steps) : "")}
+    <div class="grow"><div class="h-title">Браслет</div><div class="h-sub">${esc(parts.join(" · ") || "кроки, сон, зміни")}</div></div>
+    <div class="h-right">${icon("chevron", 18)}</div></div>`;
 }
 
 export function mount(home) {
@@ -44,6 +71,45 @@ export function mount(home) {
 const iso = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const addDays = (day, n) => { const t = new Date(day + "T12:00:00"); t.setDate(t.getDate() + n); return iso(t); };
 
+function ago(min) {
+  if (min < 60) return `${min} хв тому`;
+  if (min < 24 * 60) return `${Math.floor(min / 60)} год тому`;
+  return "давно";
+}
+
+// today: steps in the rings, distance and calories on the sides, pulse and the last sleep below
+function activityCard(a) {
+  if (!a) return "";
+  const left = Math.max(0, a.goal - a.steps);
+  const chips = [
+    a.pulse && `<span class="chip">♥ ${a.pulse.bpm} · ${ago(a.pulse.ago)}</span>`,
+    a.rhr && `<span class="chip">у спокої ${a.rhr}</span>`,
+    a.slept && `<span class="chip sl">сон ${hm(a.slept)}${a.score ? ` · ${a.score}` : ""}</span>`,
+  ].filter(Boolean).join("");
+  return `<div class="card"><div class="act">
+      <div class="act-side"><span class="muted">км</span><b>${String(a.km).replace(".", ",")}</b></div>
+      ${rings(a, 150, num(a.steps), left ? `ще ${num(left)}` : "ціль є")}
+      <div class="act-side"><span class="muted">ккал</span><b>${num(a.kcal)}</b></div></div>
+    <div class="center muted">ціль ${num(a.goal)} кроків · кільце всередині — сон до 8 год</div>
+    ${chips ? `<div class="act-chips">${chips}</div>` : ""}</div>`;
+}
+
+// 14 days of steps with the goal line, then the numbers that matter
+function stepsCard(a) {
+  if (!a) return "";
+  const w = 320, h = 120, bw = w / a.days.length;
+  const max = Math.max(a.goal * 1.2, ...a.days.map(x => x[1]));
+  const y = v => h - 14 - (v / max) * (h - 24);
+  const bars = a.days.map(([day, v], i) => `<rect x="${i * bw + 3}" y="${y(v)}" width="${bw - 6}" height="${h - 14 - y(v)}" rx="3" class="${v >= a.goal ? "hit" : "miss"}"/>`
+    + (i % 2 === a.days.length % 2 ? `<text x="${i * bw + bw / 2}" y="${h - 2}" text-anchor="middle">${day.slice(8)}</text>` : "")).join("");
+  const goal = y(a.goal);
+  const stat = (label, value) => `<div><div class="muted">${label}</div><div class="big">${value}</div></div>`;
+  return `<div class="card"><div class="line"><span>Кроки, 14 днів</span><span class="muted push">${String(a.km7).replace(".", ",")} км за тиждень</span></div>
+    <svg class="steps-chart" viewBox="0 0 ${w} ${h}" width="100%">${bars}
+      <line x1="0" x2="${w}" y1="${goal}" y2="${goal}" stroke="#8b8fa3" stroke-dasharray="4 4"/></svg>
+    <div class="grid gap band-stats">${stat("в середньому", a.avg7 ? num(a.avg7) : "—")}${stat("рекорд", a.best ? num(a.best.steps) : "—")}${stat("днів підряд", a.streak)}</div></div>`;
+}
+
 function stateCard(d) {
   const asleep = Boolean(d.sleeping);
   const text = asleep ? `Спиш з ${d.sleeping} · ${hm(d.slept)}` : "Не спиш";
@@ -56,7 +122,7 @@ function stateCard(d) {
 
 function shiftCard(d) {
   const debt = d.debt ? (d.debt.min ? `Недосип за ${d.debt.days} дн. з браслета: ${hm(d.debt.min)}` : "За тиждень висипаєшся") : "";
-  const body = d.advice || (Object.keys(d.shifts).length ? "Найближчими днями змін немає." : "Познач зміни в календарі нижче — бот підкаже, коли лягати.");
+  const body = d.advice || (d.next ? "Підкажу, коли лягати, ближче до зміни." : Object.keys(d.shifts).length ? "Найближчими днями змін немає." : "Познач зміни в календарі нижче — бот підкаже, коли лягати.");
   return `<div class="card"><div class="line"><span>Сон під зміни</span><span class="muted push">${esc(d.next || "")}</span></div>
     <div class="gap">${esc(body)}</div>${debt ? `<div class="muted gap">${esc(debt)}</div>` : ""}</div>`;
 }
@@ -142,7 +208,7 @@ function render(d) {
   busy(scr, false);
   $("[data-note]", scr).textContent = d.sleep ? `Mi Fitness · ${d.sleep.upd}` : "";
   const body = $("[data-body]", scr);
-  body.innerHTML = stateCard(d) + shiftCard(d) + week(d) + calendar(d) + lastSleep(d)
+  body.innerHTML = activityCard(d.activity) + stateCard(d) + stepsCard(d.activity) + shiftCard(d) + week(d) + calendar(d) + lastSleep(d)
     + `<div class="muted center">На браслеті: Mi Fitness → Сповіщення → Telegram → Швидкі відповіді, додай «сплю» і «встав».</div>`;
   $("[data-mode]", body).onclick = e => {
     const cmd = e.currentTarget.dataset.mode;
