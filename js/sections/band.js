@@ -78,13 +78,14 @@ function ago(min) {
 }
 
 // today: steps in the rings, distance and calories on the sides, pulse and the last sleep below
-function activityCard(a) {
+function activityCard(a, d) {
   if (!a) return "";
   const left = Math.max(0, a.goal - a.steps);
   const chips = [
     a.pulse && `<span class="chip">♥ ${a.pulse.bpm} · ${ago(a.pulse.ago)}</span>`,
     a.rhr && `<span class="chip">у спокої ${a.rhr}</span>`,
     a.slept && `<span class="chip sl">сон ${hm(a.slept)}${a.score ? ` · ${a.score}` : ""}</span>`,
+    !d.sleeping && `<button class="chip go-sleep" data-mode="band:sleep">${icon("moon", 13)} Сплю</button>`,
   ].filter(Boolean).join("");
   return `<div class="card"><div class="act">
       <div class="act-side"><span class="muted">км</span><b>${String(a.km).replace(".", ",")}</b></div>
@@ -110,13 +111,15 @@ function stepsCard(a) {
     <div class="grid gap band-stats">${stat("в середньому", a.avg7 ? num(a.avg7) : "—")}${stat("рекорд", a.best ? num(a.best.steps) : "—")}${stat("днів підряд", a.streak)}</div></div>`;
 }
 
-// only while the sleep mode is on: falling asleep cannot be seen live (the band syncs its sleep
-// after waking up), so "сплю" comes from the band or the chat, and waking up also ends the mode by itself
+// only while the sleep mode is on: "сплю" (chat or the button on the steps card) or by itself,
+// when the laptop is untouched at night; waking up also ends it by itself
 function stateCard(d) {
   if (!d.sleeping) return "";
+  const note = d.auto ? "Ноут давно без руху, тож бот пише без звуку. Торкнешся ноута — звук повернеться."
+                      : "Бот пише без звуку, нагадування й таблетки чекають до «встав».";
   return `<div class="card"><div class="band-state"><span class="ico blue">${icon("moon")}</span>
-      <div class="grow"><div class="h-title">Спиш з ${d.sleeping} · ${hm(d.slept)}</div>
-      <div class="muted">Бот пише без звуку, нагадування й таблетки чекають до «встав».</div></div></div>
+      <div class="grow"><div class="h-title">${d.auto ? "Схоже, спиш" : "Спиш"} з ${d.sleeping} · ${hm(d.slept)}</div>
+      <div class="muted">${note}</div></div></div>
     <button class="main gap" data-mode="band:wake">Встав</button></div>`;
 }
 
@@ -208,8 +211,9 @@ function render(d) {
   busy(scr, false);
   $("[data-note]", scr).textContent = d.sleep ? `Mi Fitness · ${d.sleep.upd}` : "";
   const body = $("[data-body]", scr);
-  body.innerHTML = activityCard(d.activity) + stateCard(d) + stepsCard(d.activity) + shiftCard(d) + week(d) + calendar(d) + lastSleep(d)
-    + `<div class="muted center">На браслеті: Mi Fitness → Сповіщення → Telegram → Швидкі відповіді, додай «сплю» і «встав». Лягаєш — відповідай «сплю» на будь-яке повідомлення бота: лампа гасне, ноут в Еко, бот мовчить до ранку.</div>`;
+  body.innerHTML = activityCard(d.activity, d) + stateCard(d) + stepsCard(d.activity) + shiftCard(d) + week(d) + calendar(d) + lastSleep(d)
+    + `<div class="muted center">«Сплю» (кнопка біля пульсу або слово в чаті): лампа гасне, ноут в Еко, бот мовчить до ранку.
+      Забудеш — вночі бот сам приглушиться, коли ноут 40 хв без руху. Прокидання бачить за браслетом.</div>`;
   const mode = $("[data-mode]", body);
   if (mode) mode.onclick = e => {
     const cmd = e.currentTarget.dataset.mode;

@@ -50,3 +50,5 @@ svg.rings text.u { fill: var(--hint); font-size: 9px; }
 .steps-chart .hit { fill: var(--good); }
 .steps-chart .miss { fill: rgba(121, 217, 138, .35); }
 .band-stats .big { font-size: 20px; }
+.act-chips .go-sleep { display: inline-flex; align-items: center; gap: 5px; color: var(--blue);
+                       background: rgba(159, 208, 242, .14); font-family: inherit; border: 0; }
