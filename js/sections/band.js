@@ -5,7 +5,7 @@ import { hm, openSleep } from "./sleep.js";
 
 // the band as a remote: "сплю" / "встав" (also as quick replies on the band), bedtime for the shifts,
 // a week of sleep laid over the work hours, and the shift calendar
-const scr = screen("band", "Браслет", { refresh: () => request("band-panel") });
+const scr = screen("band", "Браслет", { refresh: () => request("band-panel:force") });
 const MONTHS = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 let data = null;
 let month = null;  // first day of the month shown in the calendar
