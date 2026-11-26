@@ -1,0 +1,30 @@
+.sleep-big { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 2px; }
+.sleep-big b { font-size: 24px; }
+.sleep-big .score { margin-left: auto; color: var(--blue); font-size: 20px; font-weight: 600; }
+.sleep-big .score small { color: var(--hint); font-size: 12px; font-weight: 400; }
+
+/* phases: deep = strong blue, light = soft blue, rem = pink, awake = amber */
+.phases { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 12px; background: var(--btn); }
+.phases i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 12px; color: var(--hint); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.deep { background: #6fb6ea; fill: #6fb6ea; }
+.light { background: #bfe1f7; fill: #bfe1f7; }
+.rem { background: var(--pink); fill: var(--pink); }
+.awake { background: var(--amber); fill: var(--amber); }
+
+.sleep-chart { margin-top: 10px; }
+.sleep-chart text { fill: var(--hint); font-size: 10px; }
+
+/* when: one row per date over 24 hours */
+.tl-row { display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 8px; margin-top: 6px; }
+.tl-row .muted { font-size: 12px; }
+.tl { position: relative; height: 12px; border-radius: 6px; background: var(--btn); }
+.tl i { position: absolute; top: 0; bottom: 0; border-radius: 6px; }
+.tl i.main { background: var(--blue); }
+.tl i.nap { background: var(--pink); }
+.tl-ticks { position: relative; height: 14px; margin-top: 10px; font-size: 10px; color: var(--hint); }
+.tl-ticks span { position: absolute; transform: translateX(-50%); }
+.tl-ticks span:first-child { transform: none; }
+.tl-ticks span:last-child { transform: translateX(-100%); }

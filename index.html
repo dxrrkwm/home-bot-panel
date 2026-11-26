@@ -10,9 +10,9 @@
 <script>
 // github pages and the telegram webview cache files for 10 min, so every file gets ?v=<panel_version>
 // from the button url: a new version means new urls. Keep these lists in sync with the files.
-const CSS = ["base", "finance", "power", "prices"];
+const CSS = ["base", "finance", "power", "prices", "sleep"];
 const JS = ["main", "tg", "bus", "seal", "ui", "icons",
-            "sections/answer", "sections/finance", "sections/lamp", "sections/power", "sections/prices", "sections/reminders", "sections/remlist"];
+            "sections/answer", "sections/finance", "sections/lamp", "sections/power", "sections/prices", "sections/reminders", "sections/remlist", "sections/sleep"];
 const v = new URLSearchParams(location.search).get("v") || Date.now();
 const url = path => new URL(`${path}?v=${v}`, location.href).href;
 for (const name of CSS) document.write(`<link rel="stylesheet" href="${url(`css/${name}.css`)}">`);
