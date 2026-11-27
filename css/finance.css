@@ -38,3 +38,4 @@
 .tlegend i { display: inline-block; width: 14px; height: 0; margin-right: 6px; vertical-align: middle; }
 .tlegend i.plan { border-top: 2px dashed var(--hint); }
 .tlegend i.fact { border-top: 3px solid var(--blue); border-radius: 2px; }
+.track .zero { stroke: var(--bad); stroke-width: 1; opacity: .5; }

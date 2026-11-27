@@ -82,8 +82,7 @@ export function trackChart(t, avg7) {
   const pill = t.now < 2 ? `<span class="pace even">${money(t.rate)}/день за планом</span>`
     : tone === "even" ? `<span class="pace even">рівно за планом</span>`
     : `<span class="pace ${tone}">${tone === "ahead" ? "+" : "−"}${money(Math.abs(t.ahead))} ${tone === "ahead" ? "попереду" : "позаду"}</span>`;
-  const bills = t.bills.map(([i, s]) => `<text x="${x(i)}" y="${y(t.plan[i][1]) - 5}" text-anchor="middle" class="bill">−${money(s)}</text>`).join("");
-  const end = t.plan[t.plan.length - 1][1];
+  const zero = min < 0 ? `<line x1="${x(0)}" x2="${x(t.span)}" y1="${y(0)}" y2="${y(0)}" class="zero"/>` : "";
   return `<div class="card"><div class="line"><span>До зарплати</span>${pill}</div>
     <svg viewBox="0 0 ${w} ${h}" width="100%" class="track">
       <line x1="${x(t.now)}" x2="${x(t.now)}" y1="${top - 6}" y2="${h - bottom}" class="today"/>
@@ -91,14 +90,16 @@ export function trackChart(t, avg7) {
       <path d="${path(t.plan)}" class="plan"/>
       <path d="${path(t.fact)}" class="fact ${tone}"/>
       <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4" class="fact-dot ${tone}"/>
-      ${bills}
+      ${zero}
+      <text x="${x(0) + 2}" y="${top - 2}">${money(t.plan[0][1])}</text>
+      <text x="${Math.min(x(last[0]) + 8, w - 60)}" y="${y(last[1]) + 4}" class="now">${money(last[1])}</text>
       <text x="${x(0)}" y="${h - 6}">${t.from}</text>
       <text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>
       <text x="${x(t.span)}" y="${h - 6}" text-anchor="end">${t.to} 💼</text>
-      <text x="${x(t.span)}" y="${y(end) - 6}" text-anchor="end">${money(end)}</text>
     </svg>
-    <div class="tlegend muted"><span><i class="plan"></i>план</span><span><i class="fact"></i>на білій</span>
-      <span class="push">≈ ${money(avg7)}/день за тиждень</span></div></div>`;
+    <div class="tlegend muted"><span><i class="plan"></i>план</span><span><i class="fact"></i>вільні гроші</span>
+      <span class="push">≈ ${money(avg7)}/день</span></div>
+    <div class="muted gap">Без оренди й грошей на цілі — вони вже відкладені. Лінія вище пунктиру — ти в плюсі.</div></div>`;
 }
 
 function cards(d) {
