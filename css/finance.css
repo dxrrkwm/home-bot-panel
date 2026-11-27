@@ -13,3 +13,7 @@
 .goal-need { margin-top: 6px; font-size: 13px; padding: 6px 10px; border-radius: 10px; }
 .goal-need.ok { background: rgba(121, 217, 138, .12); color: var(--good); }
 .goal-need.late { background: rgba(255, 116, 108, .12); color: var(--bad); }
+
+/* what is left till the salary, under today's bar */
+.allow { border-top: 1px solid var(--btn); padding-top: 10px; display: grid; gap: 4px; font-size: 13px; }
+.minus { color: var(--bad); }

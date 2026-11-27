@@ -22,7 +22,9 @@ on("fin", data => {
 // home card: today against the daily budget
 function renderCard(d) {
   const spent = d.days[d.days.length - 1][1], over = spent > d.budget;
-  $("[data-sub]", $("#finCard")).textContent = `сьогодні ${money(spent)} з ${d.budget} грн · місяць ${money(d.mspent)}`;
+  $("[data-sub]", $("#finCard")).textContent = d.allow
+    ? `сьогодні ${money(spent)} з ${money(d.budget)} · до ЗП ${d.allow.days} дн`
+    : `сьогодні ${money(spent)} з ${d.budget} грн · місяць ${money(d.mspent)}`;
   $("#finBar").innerHTML = `<i class="${over ? "bad" : "good"}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i>`;
 }
 
@@ -73,12 +75,18 @@ function cards(d) {
     : `<div class="card"><div class="muted">⚪ ${esc(c.n)}</div><div class="big">${money(c.bal)}</div><div class="muted">грн</div></div>`).join("");
 }
 
+// today against what is left till the salary: the white card minus the bills before payday and the goals, per day
 function today(d) {
-  const spent = d.days[d.days.length - 1][1], left = d.budget - spent;
-  return `<div class="card"><div class="line"><span>Сьогодні</span>
+  const spent = d.days[d.days.length - 1][1], left = d.budget - spent, a = d.allow;
+  const till = a ? `<div class="allow gap">
+      <div class="line"><span class="muted">до зарплати ${esc(a.payday)} · ${a.days} дн</span>
+        <span class="push">вільних <b class="${a.free < 0 ? "minus" : ""}">${money(a.free)}</b></span></div>
+      ${a.reserve.map(r => `<div class="line muted"><span>− ${esc(r.n)}</span><span class="push">${money(r.sum)} · ${esc(r.when)}</span></div>`).join("")}
+      ${a.free < 0 ? `<div class="goal-need late">на обов'язкове не вистачає ${money(-a.free)} грн</div>` : ""}</div>` : "";
+  return `<div class="card"><div class="line"><span>${a ? "Сьогодні можна" : "Сьогодні"}</span>
       <span class="muted" style="margin-left:auto">${left >= 0 ? "ще можна " + money(left) : "понад на " + money(-left)}</span></div>
-    <div class="big">${money(spent)} <span class="muted">/ ${d.budget} грн</span></div>
-    <div class="bar"><i class="${left < 0 ? "bad" : "good"}" style="width:${Math.min(100, 100 * spent / d.budget)}%"></i></div></div>`;
+    <div class="big">${money(spent)} <span class="muted">/ ${money(d.budget)} грн</span></div>
+    <div class="bar"><i class="${left < 0 ? "bad" : "good"}" style="width:${Math.min(100, 100 * spent / Math.max(1, d.budget))}%"></i></div>${till}</div>`;
 }
 
 function month(d) {
