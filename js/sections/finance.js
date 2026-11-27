@@ -70,8 +70,9 @@ function chart(days, budget) {
 
 // the white card till the salary: dashed plan (even daily share, bills on their days, goal money left at the end)
 // and the real line; the gap between them is how far ahead or behind you are
-export function trackChart(t, avg7) {
-  const w = 320, h = 150, padL = 4, padR = 4, top = 14, bottom = 22;
+// w: the real width in px, so the text keeps its size on a wide screen
+export function trackChart(t, avg7, w = 320) {
+  const h = 170, padL = 6, padR = 6, top = 26, bottom = 24;
   const vals = [...t.plan, ...t.fact].map(p => p[1]);
   const max = Math.max(...vals), min = Math.min(0, ...vals);
   const x = i => padL + (i / t.span) * (w - padL - padR);
@@ -86,13 +87,13 @@ export function trackChart(t, avg7) {
   return `<div class="card"><div class="line"><span>До зарплати</span>${pill}</div>
     <svg viewBox="0 0 ${w} ${h}" width="100%" class="track">
       <line x1="${x(t.now)}" x2="${x(t.now)}" y1="${top - 6}" y2="${h - bottom}" class="today"/>
-      <path d="${path(t.fact)}L${x(last[0])},${h - bottom}L${x(0)},${h - bottom}Z" class="fact-area"/>
+      ${t.fact.length > 2 ? `<path d="${path(t.fact)}L${x(last[0])},${h - bottom}L${x(0)},${h - bottom}Z" class="fact-area"/>` : ""}
       <path d="${path(t.plan)}" class="plan"/>
       <path d="${path(t.fact)}" class="fact ${tone}"/>
       <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4" class="fact-dot ${tone}"/>
       ${zero}
-      <text x="${x(0) + 2}" y="${top - 2}">${money(t.plan[0][1])}</text>
-      <text x="${Math.min(x(last[0]) + 8, w - 60)}" y="${y(last[1]) + 4}" class="now">${money(last[1])}</text>
+      <text x="${x(0)}" y="${y(t.plan[0][1]) - 10}">${money(t.plan[0][1])}</text>
+      <text x="${Math.min(x(last[0]) + 10, w - 50)}" y="${y(last[1]) + 18}" class="now">${money(last[1])}</text>
       <text x="${x(0)}" y="${h - 6}">${t.from}</text>
       ${t.now > 1 && t.now < t.span - 1 ? `<text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>` : ""}
       <text x="${x(t.span)}" y="${h - 6}" text-anchor="end">${t.to} 💼</text>
@@ -203,7 +204,7 @@ function render(d) {
   $("[data-note]", fin).textContent = d.syncing ? "оновлюю виписку…" : "оновлено " + d.upd;
   const body = $("[data-body]", fin);
   const days14 = `<div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>`;
-  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${d.track ? trackChart(d.track, d.avg7) : days14}${goals(d)}
+  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${d.track ? trackChart(d.track, d.avg7, Math.max(280, (body.clientWidth || 348) - 28)) : days14}${goals(d)}
     ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${operations(d)}`;
   $$("[data-detail]", body).forEach(el => el.onclick = () => openDetail(el.dataset.detail, el.dataset.name));
 }

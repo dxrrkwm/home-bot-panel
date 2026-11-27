@@ -39,3 +39,5 @@
 .tlegend i.plan { border-top: 2px dashed var(--hint); }
 .tlegend i.fact { border-top: 3px solid var(--blue); border-radius: 2px; }
 .track .zero { stroke: var(--bad); stroke-width: 1; opacity: .5; }
+.track text { font-size: 11px; }
+.track .now { font-weight: 600; }
