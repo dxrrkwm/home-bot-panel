@@ -94,7 +94,7 @@ export function trackChart(t, avg7) {
       <text x="${x(0) + 2}" y="${top - 2}">${money(t.plan[0][1])}</text>
       <text x="${Math.min(x(last[0]) + 8, w - 60)}" y="${y(last[1]) + 4}" class="now">${money(last[1])}</text>
       <text x="${x(0)}" y="${h - 6}">${t.from}</text>
-      <text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>
+      ${t.now > 1 && t.now < t.span - 1 ? `<text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>` : ""}
       <text x="${x(t.span)}" y="${h - 6}" text-anchor="end">${t.to} 💼</text>
     </svg>
     <div class="tlegend muted"><span><i class="plan"></i>план</span><span><i class="fact"></i>вільні гроші</span>
