@@ -5,3 +5,11 @@
 [data-detail] { cursor: pointer; }
 [data-detail]:active { opacity: .7; }
 .save { margin: 8px 0; padding: 10px; border-radius: var(--r-ctl); background: var(--btn); }
+
+/* goals: a bar each, the pace under it and a line about the deadline (green on track, red behind) */
+.goal { padding: 12px 0; border-top: 1px solid var(--btn); }
+.goal:first-of-type { border: 0; padding-top: 6px; }
+.goal .bar { margin: 8px 0 6px; }
+.goal-need { margin-top: 6px; font-size: 13px; padding: 6px 10px; border-radius: 10px; }
+.goal-need.ok { background: rgba(121, 217, 138, .12); color: var(--good); }
+.goal-need.late { background: rgba(255, 116, 108, .12); color: var(--bad); }

@@ -112,6 +112,28 @@ function tips(list) {
     ${items(list, "muted")}</div>`;
 }
 
+// goals: jars with a goal and the black card debt, with the pace of the last 30 days and when it gets there
+function goals(d) {
+  if (!d.goals?.length) return jars(d);
+  const row = g => {
+    const debt = g.kind === "debt";
+    const done = debt ? 1 - g.bal / g.goal : g.bal / g.goal;
+    const pace = g.month == null ? "темп з'явиться за кілька днів"
+      : debt ? (g.month > 0 ? `−${money(g.month)} за місяць` : g.month < 0 ? `+${money(-g.month)} боргу за місяць` : "за місяць без змін")
+      : g.month > 0 ? `+${money(g.month)} за 30 днів` : "за 30 днів нічого";
+    const when = g.bal === 0 && debt ? "закрито 🎉"
+      : g.eta ? `у такому темпі — ${esc(g.eta)}` : g.month > 0 ? "" : "поки без прогнозу";
+    const need = g.deadline ? `<div class="goal-need ${g.late ? "late" : "ok"}">до ${esc(g.deadline)} треба ≈ ${money(g.need)}/міс${g.late ? ` · зараз ${money(Math.max(g.month, 0))}` : " · встигаєш"}</div>` : "";
+    return `<div class="goal">
+      <div class="line"><span>${debt ? "⚫ " : "🎯 "}${esc(g.n)}</span>
+        <span class="push">${debt ? `борг <b>${money(g.bal)}</b>` : `<b>${money(g.bal)}</b> <span class="muted">/ ${money(g.goal)}</span>`}</span></div>
+      <div class="bar"><i class="${debt ? (done > 0.5 ? "good" : "bad") : "good"}" style="width:${Math.max(2, 100 * done)}%"></i></div>
+      <div class="muted">${pace}${when ? " · " + when : ""}</div>${need}</div>`;
+  };
+  return `<div class="card"><div class="line"><span>Цілі</span><span class="muted push">${Math.round(100 * d.goals.filter(g => g.kind === "jar").reduce((n, g) => n + g.bal, 0) / Math.max(1, d.goals.filter(g => g.kind === "jar").reduce((n, g) => n + g.goal, 0)))}% зібрано</span></div>
+    ${d.goals.map(row).join("")}</div>`;
+}
+
 function jars(d) {
   if (!d.jars.length) return "";
   return `<div class="card"><div>Банки</div>${d.jars.map(j => `<div class="gap">
@@ -138,8 +160,8 @@ function render(d) {
   busy(fin, Boolean(d.syncing));
   $("[data-note]", fin).textContent = d.syncing ? "оновлюю виписку…" : "оновлено " + d.upd;
   const body = $("[data-body]", fin);
-  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}
+  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${goals(d)}
     <div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>
-    ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${jars(d)}${operations(d)}`;
+    ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${operations(d)}`;
   $$("[data-detail]", body).forEach(el => el.onclick = () => openDetail(el.dataset.detail, el.dataset.name));
 }

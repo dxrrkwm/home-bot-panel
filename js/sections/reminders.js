@@ -1,4 +1,4 @@
-import { send } from "../bus.js";
+import { send, request, on, ready } from "../bus.js";
 import { icon } from "../icons.js";
 import { $, $$, head, toast } from "../ui.js";
 import { ask } from "./answer.js";
@@ -8,6 +8,20 @@ const SOON = ["15 хв", "30 хв", "1 год", "2 год"];
 // repeat until "done" in the chat; minutes, 0 = once, "" = own value
 const REPEAT = [["5", "5 хв"], ["10", "10 хв"], ["30", "30 хв"], ["60", "1 год"], ["0", "раз"], ["", "…"]];
 const REPEAT_DEFAULT = "10";
+// "тиша <arg>" in the bot
+const MUTE = [["30 хв", "30 хв"], ["1 год", "1 год"], ["3 год", "3 год"], ["до ранку", "до ранку"]];
+
+on("mute", d => {
+  const until = d.until ? new Date(d.until * 1000) : null;
+  const card = $("#reminders");
+  if (!card) return;
+  card.classList.toggle("muted-on", Boolean(until));
+  $("#muteText").textContent = until
+    ? `Тиша до ${until.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })} — потім прийде все, що чекало`
+    : "Тиша: нагадування й таблетки почекають";
+  $("#muteOff").hidden = !until;
+  $("[data-sub]", card).textContent = until ? "🔕 тиша" : "";
+});
 
 export function mount(home) {
   home.insertAdjacentHTML("beforeend", `<div class="card" id="reminders">
@@ -33,6 +47,19 @@ export function mount(home) {
     <div class="chips gap">
       <button id="remList">${icon("list", 16)} Мої нагадування</button>
       <button data-ask="💊 Таблетки" data-title="Таблетки">${icon("pill", 16)} Таблетки</button>
+    </div>
+    <div class="mute gap">
+      <div class="line"><span class="mute-ico">${icon("bellOff", 16)}</span>
+        <span class="grow" id="muteText">Тиша: нагадування й таблетки почекають</span>
+        <button class="fix" id="muteOff" hidden>Зняти</button></div>
+      <div class="chips gap">
+        ${MUTE.map(([arg, label]) => `<button data-mute="${arg}">${label}</button>`).join("")}
+        <button data-mute="">свій…</button>
+      </div>
+      <div class="line gap" id="muteOwnLine" hidden>
+        <input type="text" id="muteOwn" placeholder="2 год, 45 хв або до 14:30">
+        <button class="fix" id="muteGo">OK</button>
+      </div>
     </div></div>`);
 
   const root = $("#reminders");
@@ -80,5 +107,21 @@ export function mount(home) {
     $("#what").value = "";
   };
   $("#remList").onclick = openList;
+
+  const mute = arg => send("тиша " + arg, d => { toast(d.text.split("\n")[0]); request("mute-state"); });
+  $$("[data-mute]", root).forEach(b => b.onclick = () => {
+    if (b.dataset.mute) return mute(b.dataset.mute);
+    $("#muteOwnLine").hidden = false;
+    $("#muteOwn").focus();
+  });
+  $("#muteGo").onclick = () => {
+    const v = $("#muteOwn").value.trim();
+    if (!v) return toast("Напиши, напр. 2 год або до 14:30");
+    mute(/^\d{1,2}[:.]\d{2}$/.test(v) ? "до " + v : v);
+    $("#muteOwnLine").hidden = true;
+    $("#muteOwn").value = "";
+  };
+  $("#muteOff").onclick = () => mute("вимк");
+  ready.then(() => request("mute-state"));
   $$("[data-ask]", root).forEach(b => b.onclick = () => ask(b.dataset.ask, b.dataset.title));
 }

@@ -138,3 +138,23 @@ input[type=datetime-local] { padding: 12px; border-radius: var(--r-ctl); border:
 button.danger { color: var(--bad); }
 textarea { padding: 12px; border-radius: var(--r-ctl); border: 0; outline: 0; background: var(--btn); color: var(--text);
            font: inherit; resize: vertical; }
+
+/* status screen: a dot per part, green ok, amber needs a look, red broken, grey off */
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--hint); }
+.status-dot.ok { background: var(--good); box-shadow: 0 0 0 3px rgba(121, 217, 138, .18); }
+.status-dot.warn { background: var(--amber); box-shadow: 0 0 0 3px rgba(243, 213, 155, .2); }
+.status-dot.bad { background: var(--bad); box-shadow: 0 0 0 3px rgba(255, 116, 108, .2); }
+.status-dot.off { background: var(--btn); }
+.status-dot.big { width: 14px; height: 14px; }
+.status-hero { display: flex; align-items: center; gap: 14px; }
+.status-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--btn); }
+.status-row:first-child { border: 0; }
+.status-row .muted { margin-top: 2px; }
+button.fix { padding: 7px 10px; font-size: 12px; border-radius: 16px; flex: none; }
+button:disabled { opacity: .5; }
+
+/* silence for reminders: a soft strip under the reminder form, pink while it is on */
+.mute { border-top: 1px solid var(--btn); padding-top: 12px; }
+.mute-ico { color: var(--hint); display: flex; }
+.muted-on .mute-ico { color: var(--pink); }
+.muted-on #muteText { color: var(--pink); }
