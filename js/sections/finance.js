@@ -71,6 +71,19 @@ function chart(days, budget) {
 // till the salary: a column a day. Past days: what went out (green within the day's money, red over it),
 // today: what went out and what is still allowed, next days: the allowed share as an empty box,
 // bills and the payday marked on their days. Under it: where the last week's pace ends up
+const WEEK = ["пн", "вт", "ср", "чт", "пт", "сб", "нд"];
+const short = v => (v < 0 ? "−" : "") + (Math.abs(v) >= 1000 ? (Math.abs(v) / 1000).toFixed(1).replace(".", ",") + "к" : Math.abs(v));
+
+// one line about a tapped day
+function tip(d, t) {
+  const day = `${d.d} (${WEEK[d.w]})`;
+  const left = v => v < 0 ? `не вистачатиме ${money(-v)} грн` : `лишиться ≈ ${money(v)} грн`;
+  if (d.when === "past") return `${day}: витратив ${money(d.spent)} грн — ${d.spent > t.per_day ? `понад ${money(t.per_day)} на ${money(d.spent - t.per_day)}` : "в межах"}`;
+  if (d.when === "today") return `Сьогодні витратив ${money(d.spent)}, ще можна ${money(Math.max(t.per_day - d.spent, 0))}. Якщо далі як цього тижня — після сьогодні ${left(d.left)}`;
+  if (d.when === "pay") return `${day}: зарплата 💼. Якщо так і далі — до неї ${left(t.end)}`;
+  return `${day}: якщо витрачати ≈ ${money(t.avg)}/день, на кінець дня ${left(d.left)}` + (d.bill ? ` (${d.bill[0]} −${money(d.bill[1])} уже враховано)` : "");
+}
+
 export function tillChart(t, w = 320) {
   const n = t.days.length, h = 150, top = 30, bottom = 22;
   const col = w / n, bw = Math.min(26, col * 0.64);
@@ -86,8 +99,11 @@ export function tillChart(t, w = 320) {
       out += d.spent ? box(i, d.spent, d.spent > t.per_day ? "over" : "ok") : `<rect x="${cx(i) - bw / 2}" y="${h - bottom - 2}" width="${bw}" height="2" rx="1" class="ok"/>`;
       if (d.spent && (col >= 22 || d.spent > t.per_day)) out += `<text x="${cx(i)}" y="${y(d.spent) - 4}" text-anchor="middle" class="val">${d.spent >= 1000 ? (d.spent / 1000).toFixed(1).replace(".", ",") + "к" : d.spent}</text>`;
     }
-    if (d.bill) out += `<text x="${cx(i)}" y="${y(t.per_day) - 22}" text-anchor="middle" class="bill">🏠</text>
-      <text x="${cx(i)}" y="${y(t.per_day) - 8}" text-anchor="middle" class="bill">−${Math.round(d.bill[1] / 1000)}к</text>`;
+    if (d.bill) out += `<text x="${cx(i)}" y="${y(t.per_day) - 34}" text-anchor="middle" class="bill">🏠</text>
+      <text x="${cx(i)}" y="${y(t.per_day) - 21}" text-anchor="middle" class="bill">−${Math.round(d.bill[1] / 1000)}к</text>`;
+    const lastNext = i === n - 2;
+    if (d.left != null && d.when !== "today" && (col >= 24 || i % 2 === n % 2 || lastNext)) out += `<text x="${cx(i)}" y="${y(t.per_day) - 6}" text-anchor="middle" class="left ${d.left < 0 ? "neg" : ""}">${short(d.left)}</text>`;
+    out += `<rect x="${i * col}" y="0" width="${col}" height="${h}" class="hit" data-tip="${esc(tip(d, t))}"/>`;
     if (d.when === "pay") out += `<text x="${cx(i)}" y="${h - bottom - 6}" text-anchor="middle" class="pay">💼</text>`;
     const label = d.when === "today" ? "сьогодні" : d.d.slice(0, 2);
     const show = d.when === "today" || d.when === "pay" || col >= 20 || i % 2 === 0;
@@ -103,8 +119,9 @@ export function tillChart(t, w = 320) {
   return `<div class="card"><div class="line"><span>До зарплати · ${next} дн</span>${pill}</div>
     <div class="gap"><span class="big">${money(t.per_day)}</span> <span class="muted">грн на день можна</span></div>
     <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" class="till">${line}${bars}</svg>
+    <div class="tip muted" data-till-tip>Натисни на день — скажу, що там і скільки лишиться</div>
     <div class="tlegend muted"><span><i class="sq ok"></i>витратив</span><span><i class="sq over"></i>понад</span>
-      <span><i class="sq allowed"></i>можна</span><span>🏠 платіж</span></div>
+      <span><i class="sq allowed"></i>можна</span><span><b class="left-key">2,1к</b> лишиться</span></div>
     <div class="forecast gap">${forecast}</div></div>`;
 }
 
@@ -212,4 +229,10 @@ function render(d) {
   body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${d.till ? tillChart(d.till, Math.max(280, (body.clientWidth || 348) - 28)) : days14}${goals(d)}
     ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${operations(d)}`;
   $$("[data-detail]", body).forEach(el => el.onclick = () => openDetail(el.dataset.detail, el.dataset.name));
+  $$(".till .hit", body).forEach(el => el.onclick = () => {
+    $$(".till .hit", body).forEach(x => x.classList.toggle("on", x === el));
+    const box = $("[data-till-tip]", body);
+    box.textContent = el.dataset.tip;
+    box.classList.remove("muted");
+  });
 }
