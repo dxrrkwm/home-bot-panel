@@ -84,10 +84,10 @@ export function tillChart(t, w = 320) {
     if (d.when === "today") out += box(i, Math.max(t.per_day, d.spent), "allowed today") + (d.spent ? box(i, d.spent, d.spent > t.per_day ? "over" : "ok") : "");
     if (d.when === "past") {
       out += d.spent ? box(i, d.spent, d.spent > t.per_day ? "over" : "ok") : `<rect x="${cx(i) - bw / 2}" y="${h - bottom - 2}" width="${bw}" height="2" rx="1" class="ok"/>`;
-      if (d.spent && col >= 22) out += `<text x="${cx(i)}" y="${y(d.spent) - 4}" text-anchor="middle" class="val">${d.spent >= 1000 ? (d.spent / 1000).toFixed(1).replace(".", ",") + "к" : d.spent}</text>`;
+      if (d.spent && (col >= 22 || d.spent > t.per_day)) out += `<text x="${cx(i)}" y="${y(d.spent) - 4}" text-anchor="middle" class="val">${d.spent >= 1000 ? (d.spent / 1000).toFixed(1).replace(".", ",") + "к" : d.spent}</text>`;
     }
-    if (d.bill) out += `<text x="${cx(i)}" y="${top - 16}" text-anchor="middle" class="bill">🏠</text>
-      <text x="${cx(i)}" y="${top - 4}" text-anchor="middle" class="bill">−${Math.round(d.bill[1] / 1000)}к</text>`;
+    if (d.bill) out += `<text x="${cx(i)}" y="${y(t.per_day) - 22}" text-anchor="middle" class="bill">🏠</text>
+      <text x="${cx(i)}" y="${y(t.per_day) - 8}" text-anchor="middle" class="bill">−${Math.round(d.bill[1] / 1000)}к</text>`;
     if (d.when === "pay") out += `<text x="${cx(i)}" y="${h - bottom - 6}" text-anchor="middle" class="pay">💼</text>`;
     const label = d.when === "today" ? "сьогодні" : d.d.slice(0, 2);
     const show = d.when === "today" || d.when === "pay" || col >= 20 || i % 2 === 0;
