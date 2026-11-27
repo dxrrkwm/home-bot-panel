@@ -18,26 +18,26 @@
 .allow { border-top: 1px solid var(--btn); padding-top: 10px; display: grid; gap: 4px; font-size: 13px; }
 .minus { color: var(--bad); }
 
-/* till the salary: dashed plan, the real line on top, a pill that says ahead or behind */
-.track .plan { fill: none; stroke: var(--hint); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .8; }
-.track .fact { fill: none; stroke: var(--blue); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-.track .fact.ahead { stroke: var(--good); }
-.track .fact.behind { stroke: var(--bad); }
-.track .fact-area { fill: var(--blue); opacity: .08; }
-.track .fact-dot { fill: var(--blue); stroke: var(--card); stroke-width: 2; }
-.track .fact-dot.ahead { fill: var(--good); }
-.track .fact-dot.behind { fill: var(--bad); }
-.track .today { stroke: var(--btn); stroke-width: 1; }
-.track .now { fill: var(--text); }
-.track .bill { fill: var(--pink); }
+
+/* till the salary: a column a day; green within the day's money, red over it, an empty box for what is allowed */
+.till { display: block; margin-top: 8px; overflow: visible; }
+.till text { font-size: 11px; fill: var(--hint); }
+.till .ok { fill: var(--good); }
+.till .over { fill: var(--bad); }
+.till .allowed { fill: rgba(159, 208, 242, .07); stroke: var(--blue); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+.till .allowed.today { stroke-dasharray: none; opacity: 1; }
+.till .limit { stroke: var(--blue); stroke-width: 1; stroke-dasharray: 2 4; opacity: .5; }
+.till .val { font-size: 10px; fill: var(--text); }
+.till .bill { fill: var(--pink); font-size: 10px; }
+.till .now { fill: var(--text); font-weight: 600; }
+.till .weekend { fill: var(--pink); opacity: .8; }
+.till .pay { font-size: 14px; }
 .pace { margin-left: auto; font-size: 12px; padding: 4px 10px; border-radius: 12px; }
 .pace.ahead { background: rgba(121, 217, 138, .14); color: var(--good); }
 .pace.behind { background: rgba(255, 116, 108, .14); color: var(--bad); }
-.pace.even { background: var(--btn); color: var(--hint); }
-.tlegend { display: flex; gap: 14px; align-items: center; margin-top: 6px; }
-.tlegend i { display: inline-block; width: 14px; height: 0; margin-right: 6px; vertical-align: middle; }
-.tlegend i.plan { border-top: 2px dashed var(--hint); }
-.tlegend i.fact { border-top: 3px solid var(--blue); border-radius: 2px; }
-.track .zero { stroke: var(--bad); stroke-width: 1; opacity: .5; }
-.track text { font-size: 11px; }
-.track .now { font-weight: 600; }
+.tlegend { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 4px; font-size: 12px; }
+.tlegend .sq { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.tlegend .sq.ok { background: var(--good); }
+.tlegend .sq.over { background: var(--bad); }
+.tlegend .sq.allowed { border: 1px dashed var(--blue); }
+.forecast { font-size: 14px; line-height: 1.45; }
