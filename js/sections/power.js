@@ -91,7 +91,13 @@ function controls(d) {
     <div class="setting"><span>Ліхтар</span><div class="seg">
       ${[[0, "Вимк."], [1, "Світло"], [2, "Блимає"]].map(([m, label]) =>
         `<button data-cmd="led:${m}" class="${s?.online && s.led === m ? "on" : ""}">${label}</button>`).join("")}</div></div>
-    <div class="setting"><span>Ноут</span>${seg("🔋 Еко", "⚡ Звичайний", d.laptop.eco, ["Еко", "Звичайний"])}</div></div>`;
+    <div class="setting"><span>Ноут</span>${laptopModes(d.laptop)}</div></div>`;
+}
+
+function laptopModes(l) {
+  const mode = l.mode || (l.eco ? "eco" : "normal");
+  return `<div class="seg">${[["⚡ Звичайний", "normal", "Звичайний"], ["🔋 Еко", "eco", "Еко"], ["🌑 Мінімум", "min", "Мінімум"]]
+    .map(([cmd, m, label]) => `<button data-cmd="${cmd}" class="${l.ac !== null && mode === m ? "on" : ""}">${label}</button>`).join("")}</div>`;
 }
 
 function battery(hist) {
