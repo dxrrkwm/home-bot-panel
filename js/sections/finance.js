@@ -93,7 +93,7 @@ export function trackChart(t, avg7, w = 320) {
       <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4" class="fact-dot ${tone}"/>
       ${zero}
       <text x="${x(0)}" y="${y(t.plan[0][1]) - 10}">${money(t.plan[0][1])}</text>
-      <text x="${Math.min(x(last[0]) + 10, w - 50)}" y="${y(last[1]) + 18}" class="now">${money(last[1])}</text>
+      <text x="${Math.min(x(last[0]) + 8, w - 50)}" y="${y(last[1]) + (tone === "behind" ? 18 : -10)}" class="now">${money(last[1])}</text>
       <text x="${x(0)}" y="${h - 6}">${t.from}</text>
       ${t.now > 1 && t.now < t.span - 1 ? `<text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>` : ""}
       <text x="${x(t.span)}" y="${h - 6}" text-anchor="end">${t.to} 💼</text>
