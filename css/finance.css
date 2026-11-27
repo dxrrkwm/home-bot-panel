@@ -17,3 +17,24 @@
 /* what is left till the salary, under today's bar */
 .allow { border-top: 1px solid var(--btn); padding-top: 10px; display: grid; gap: 4px; font-size: 13px; }
 .minus { color: var(--bad); }
+
+/* till the salary: dashed plan, the real line on top, a pill that says ahead or behind */
+.track .plan { fill: none; stroke: var(--hint); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .8; }
+.track .fact { fill: none; stroke: var(--blue); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.track .fact.ahead { stroke: var(--good); }
+.track .fact.behind { stroke: var(--bad); }
+.track .fact-area { fill: var(--blue); opacity: .08; }
+.track .fact-dot { fill: var(--blue); stroke: var(--card); stroke-width: 2; }
+.track .fact-dot.ahead { fill: var(--good); }
+.track .fact-dot.behind { fill: var(--bad); }
+.track .today { stroke: var(--btn); stroke-width: 1; }
+.track .now { fill: var(--text); }
+.track .bill { fill: var(--pink); }
+.pace { margin-left: auto; font-size: 12px; padding: 4px 10px; border-radius: 12px; }
+.pace.ahead { background: rgba(121, 217, 138, .14); color: var(--good); }
+.pace.behind { background: rgba(255, 116, 108, .14); color: var(--bad); }
+.pace.even { background: var(--btn); color: var(--hint); }
+.tlegend { display: flex; gap: 14px; align-items: center; margin-top: 6px; }
+.tlegend i { display: inline-block; width: 14px; height: 0; margin-right: 6px; vertical-align: middle; }
+.tlegend i.plan { border-top: 2px dashed var(--hint); }
+.tlegend i.fact { border-top: 3px solid var(--blue); border-radius: 2px; }

@@ -68,6 +68,39 @@ function chart(days, budget) {
     <text x="${w - 2}" y="${y(budget) - 3}" text-anchor="end">${budget}</text></svg>`;
 }
 
+// the white card till the salary: dashed plan (even daily share, bills on their days, goal money left at the end)
+// and the real line; the gap between them is how far ahead or behind you are
+export function trackChart(t, avg7) {
+  const w = 320, h = 150, padL = 4, padR = 4, top = 14, bottom = 22;
+  const vals = [...t.plan, ...t.fact].map(p => p[1]);
+  const max = Math.max(...vals), min = Math.min(0, ...vals);
+  const x = i => padL + (i / t.span) * (w - padL - padR);
+  const y = v => top + (1 - (v - min) / Math.max(1, max - min)) * (h - top - bottom);
+  const path = pts => pts.map(([i, v], n) => `${n ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const last = t.fact[t.fact.length - 1];
+  const tone = Math.abs(t.ahead) < 50 ? "even" : t.ahead > 0 ? "ahead" : "behind";
+  const pill = t.now < 2 ? `<span class="pace even">${money(t.rate)}/день за планом</span>`
+    : tone === "even" ? `<span class="pace even">рівно за планом</span>`
+    : `<span class="pace ${tone}">${tone === "ahead" ? "+" : "−"}${money(Math.abs(t.ahead))} ${tone === "ahead" ? "попереду" : "позаду"}</span>`;
+  const bills = t.bills.map(([i, s]) => `<text x="${x(i)}" y="${y(t.plan[i][1]) - 5}" text-anchor="middle" class="bill">−${money(s)}</text>`).join("");
+  const end = t.plan[t.plan.length - 1][1];
+  return `<div class="card"><div class="line"><span>До зарплати</span>${pill}</div>
+    <svg viewBox="0 0 ${w} ${h}" width="100%" class="track">
+      <line x1="${x(t.now)}" x2="${x(t.now)}" y1="${top - 6}" y2="${h - bottom}" class="today"/>
+      <path d="${path(t.fact)}L${x(last[0])},${h - bottom}L${x(0)},${h - bottom}Z" class="fact-area"/>
+      <path d="${path(t.plan)}" class="plan"/>
+      <path d="${path(t.fact)}" class="fact ${tone}"/>
+      <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4" class="fact-dot ${tone}"/>
+      ${bills}
+      <text x="${x(0)}" y="${h - 6}">${t.from}</text>
+      <text x="${x(t.now)}" y="${h - 6}" text-anchor="middle" class="now">сьогодні</text>
+      <text x="${x(t.span)}" y="${h - 6}" text-anchor="end">${t.to} 💼</text>
+      <text x="${x(t.span)}" y="${y(end) - 6}" text-anchor="end">${money(end)}</text>
+    </svg>
+    <div class="tlegend muted"><span><i class="plan"></i>план</span><span><i class="fact"></i>на білій</span>
+      <span class="push">≈ ${money(avg7)}/день за тиждень</span></div></div>`;
+}
+
 function cards(d) {
   return d.cards.map(c => c.lim
     ? `<div class="card"><div class="muted">⚫ ${esc(c.n)} · борг</div><div class="big">${money(c.debt)}</div>
@@ -168,8 +201,8 @@ function render(d) {
   busy(fin, Boolean(d.syncing));
   $("[data-note]", fin).textContent = d.syncing ? "оновлюю виписку…" : "оновлено " + d.upd;
   const body = $("[data-body]", fin);
-  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${goals(d)}
-    <div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>
+  const days14 = `<div class="card"><div class="line"><span>14 днів</span><span class="muted" style="margin-left:auto">в середньому ${money(d.avg7)}/день</span></div>${chart(d.days, d.budget)}</div>`;
+  body.innerHTML = `<div class="pair">${cards(d)}</div>${today(d)}${d.track ? trackChart(d.track, d.avg7) : days14}${goals(d)}
     ${month(d)}${salary(d)}${goods(d.goods || [])}${tips(d.tips || [])}${operations(d)}`;
   $$("[data-detail]", body).forEach(el => el.onclick = () => openDetail(el.dataset.detail, el.dataset.name));
 }
